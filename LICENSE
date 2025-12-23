@@ -1,0 +1,50 @@
+# Tachion Limited Use & Non-Commercial License
+
+**Copyright &copy; 2026 Varak Tanashian. All Rights Reserved.**
+
+### 1. OVERVIEW
+
+This License governs the use of the software, source code, images, documentation, and associated media (collectively, the **"Work"**) provided by Varak Tanashian (**"Licensor"**). By accessing or using the Work, you agree to be bound by the terms of this License.
+
+### 2. GRANT OF LICENSE
+
+Subject to the terms and conditions herein, the Licensor hereby grants you a personal, non-exclusive, non-transferable, and non-sublicensable license to:
+
+- Use, copy, and modify the Work for personal, educational, or research purposes.
+- Redistribute the Work in its original or modified form, provided that the conditions in Section 3 and Section 4 are met.
+
+### 3. ATTRIBUTION REQUIREMENT
+
+You must provide appropriate credit to the Licensor. This includes:
+
+- Retaining all original copyright notices, headers, and digital "watermarks" within the source code and assets.
+- Providing a visible link to the original repository **[https://github.com/intelligent-username/Tachion](https://github.com/intelligent-username/Tachion)**.
+- Acknowledging Varak Tanashian as the original creator in any public-facing display of the Work.
+
+### 4. NON-COMMERCIAL RESTRICTION
+
+**Commercial use of the Work is strictly prohibited without prior written consent from the Licensor.** "Commercial use" includes, but is not limited to:
+
+- Selling, leasing, or licensing the Work or any derivative works.
+- Using the Work as a service or as part of a product that generates revenue.
+- Using the Work for promotional purposes for a for-profit entity.
+- Integrating the Work into internal tools used by a for-profit corporation.
+
+To request commercial licensing, please contact: [inquiries@varak.dev](mailto:inquiries@varak.dev).
+
+### 5. EXCEPTIONS (THIRD-PARTY COMPONENTS)
+
+The Work may include or link to third-party libraries, assets, or open-source components.
+
+- This License **does not** supersede the licenses of those specific components.
+- Any code or assets explicitly identified as being under a third-party license (e.g., MIT, GPL, Apache, Creative Commons) remain subject to their original licensing terms.
+
+### 6. ASSETS & IMAGERY
+
+The provisions of this license apply equally to all visual assets, including but not limited to icons, UI designs, and images included in the Work. Unauthorized commercial use of these assets is a violation of this License.
+
+### 7. LIMITATION OF LIABILITY
+
+THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS IN THE WORK.
+
+
