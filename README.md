@@ -1,6 +1,6 @@
 # Tachion
 
-<img src="imgs/logo.svg" width="128" height="128" alt="Logo">
+<img src="imgs/Logo.svg" width="256" height="256" alt="Logo">
 
 ## Table of Contents
 
@@ -15,7 +15,7 @@
 
 ---
 
-Tachion is a tool for predicting financial returns using historical market data. Currently, it supports:
+Tachion is a tool for forecasting market behaviour using historical market data. Currently, it supports:
 
 - Stocks  
 - Crypto  
@@ -45,7 +45,7 @@ conda create -n tachion python=3.11
 conda activate tachion
 conda install pip
 pip install -r requirements.txt
-````
+```
 
 ### Using Python / pip
 
@@ -67,14 +67,45 @@ uvicorn api.main:app --reload
 ```
 
 3. Send a POST request to `/predict` with your CSV and desired horizon.
-4. Visualize predictions and confidence intervals through the integrated frontend.
+4. Visualize predictions and prediction intervals through the integrated frontend.
 
-If tweaking any of the internals of the project, make sure to first read the provided `.md` (markdown) files to understand the corresponding specifications.
+If tweaking any of the internals of the project, make sure to first read the provided `.md` (markdown) files in the folder you're working in to understand the corresponding specifications.
 
 ## File Structure
 
 ```md
-# Will be filled in once the project is finalized :)
+Tachion/
+├── LICENSE
+├── README.md
+├── requirements.txt
+├── api/
+│   ├── REAMDE.md
+│   └── predict.py
+├── core/
+│   └── README.md
+├── data/
+│   ├── README.md
+│   └── collect.py
+├── frontend/
+│   ├── README.md
+│   ├── index.html
+│   ├── styles.css
+│   ├── main.js
+│   ├── components/
+│   │   ├── footer.js
+│   │   ├── graph.js
+│   │   ├── header.js
+│   │   └── sidebar.js
+│   └── js/
+│       ├── api.js
+│       ├── events.js
+│       ├── ui.js
+│       └── visualizer.js
+├── imgs/
+├── models/
+│   └── README.md
+└── train/
+    └── README.md
 ```
 
 ## Contributing
