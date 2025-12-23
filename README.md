@@ -9,8 +9,9 @@
    - [Using Conda](#using-conda)  
    - [Using Python / pip](#using-python--pip)  
 3. [Usage](#usage)  
-4. [Contributing](#contributing)  
-5. [License](#license)  
+4. [File Structure](#file-structure)
+5. [Contributing](#contributing)  
+6. [License](#license)  
 
 ---
 
@@ -56,7 +57,6 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-
 ## Usage
 
 1. Prepare your CSV containing historical data (OHLCV or relevant features).
@@ -68,6 +68,8 @@ uvicorn api.main:app --reload
 
 3. Send a POST request to `/predict` with your CSV and desired horizon.
 4. Visualize predictions and confidence intervals through the integrated frontend.
+
+If tweaking any of the internals of the project, make sure to first read the provided `.md` (markdown) files to understand the corresponding specifications.
 
 ## File Structure
 
@@ -82,7 +84,6 @@ Contributions are welcome. Please follow these guidelines:
 1. Fork the repository and create a feature branch.
 2. Ensure code adheres to PEP8 and includes tests where applicable.
 3. Submit a pull request with a clear description of changes.
-
 
 ## License
 

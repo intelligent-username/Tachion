@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tachion</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Tachion</h1>
+  </header>
+
+  <main>
+    <section id="inputs">
+      <div class="input-group">
+        <label for="ticker-input">Enter Ticker (Stock/Crypto/Asset):</label>
+        <input type="text" id="ticker-input" placeholder="e.g. AAPL, BTC-USD">
+        <button id="fetch-button">Fetch Data</button>
+      </div>
+
+      <div class="input-group">
+        <label for="csv-input">Or upload CSV:</label>
+        <input type="file" id="csv-input" accept=".csv">
+        <button id="upload-button">Use CSV</button>
+      </div>
+    </section>
+
+    <section id="visualization">
+      <canvas id="price-chart"></canvas>
+    </section>
+
+    <aside id="side-panel">
+      <h2>Prediction Info</h2>
+      <p id="prediction-text">Prediction will appear here.</p>
+      <p id="confidence-text"></p>
+    </aside>
+  </main>
+
+  <script src="main.js"></script>
+  <script src="visualizer.js"></script>
+</body>
+</html>
