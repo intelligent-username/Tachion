@@ -1,0 +1,124 @@
+# ---- S&P 500 ----- $
+
+# Information Technology
+NVDA
+AAPL
+MSFT
+ANET
+ADSK
+
+# Financials
+JPM
+V
+MA
+AJG
+COF
+
+# Health Care
+LLY
+JNJ
+ABBV
+BSX
+VRTX
+
+# Consumer Discretionary
+AMZN
+TSLA
+HD
+BKNG
+MAR
+
+# Communication Services
+GOOGL
+META
+NFLX
+TMUS
+DIS
+
+# Industrials
+GE
+CAT
+UNP
+CARR
+HWM
+
+# Consumer Staples
+WMT
+PG
+KO
+EL
+MO
+
+# Energy
+XOM
+CVX
+COP
+EOG
+WMB
+
+# Utilities
+NEE
+SO
+DUK
+AEP
+CEG
+
+# Real Estate
+PLD
+AMT
+EQIX
+WELL
+AVB
+
+# Materials
+LIN
+SHW
+FCX
+APD
+NEM
+
+#/ ---- S&P 500 -----/#
+
+# ---- Misc. Importants to account for AI bubble bias, consumer sentiment, ---- #
+
+AMD
+AVGO
+ORCL
+IBM
+
+BRK.B
+BAC
+
+COST
+UPS
+PEP
+
+#/ ---- Misc. Importants ---- /#
+
+
+# ---- 15 Noise ---- #
+
+# Retail
+GME
+AMC
+HOOD
+
+# wild Swingers
+PLTR
+U
+RIVN
+SNOW
+MSTR
+
+# Small/Mid-Cap
+RUN
+AFRM
+UPST
+CHPT
+
+# Contrarians
+MARA
+COIN
+DKNG
+
+#/ ---- 15 Noise ---- /#
