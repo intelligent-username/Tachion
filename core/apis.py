@@ -4,12 +4,14 @@ API Call Utils
 
 import os
 import requests
+import datetime
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
 def TwelveDataAPI(url="https://api.twelvedata.com/time_series",
-                   interval="30min", outputsize=5000, format="JSON", apikey=None, symbol=None):
+                   interval="30min", outputsize=5000, format="JSON", end_date = datetime.datetime.now(), apikey=None, symbol=None):
     """  
     :param url: TwelveData's Rest API Endpoint
     :param interval: time interval. 
@@ -20,6 +22,7 @@ def TwelveDataAPI(url="https://api.twelvedata.com/time_series",
             Must be one of the following:
                 JSON, CSV
                 Pandas DataFrames can be created via the SDK
+    :param end_date: The end date for the data retrieval. Defaults to present date and time.
     :param apikey: secret key. Do not touch. Will use environment variable TD_KEY.
     :param symbol: The specific symbol to retrieve. MAKE SURE IT'S NOT BLANK.
             For equities, just input the symbol
@@ -46,6 +49,7 @@ def TwelveDataAPI(url="https://api.twelvedata.com/time_series",
     details = {
         "apikey": apikey,
         "symbol": symbol,
+        "end_date": end_date.strftime("%Y-%m-%d %H:%M:%S"),
         "interval": interval,
         "outputsize": outputsize,
         "format": format

@@ -9,3 +9,6 @@ __pycache__/
 
 # Reminders, formulas, etc. for my own use, might publish later but not necessary for the project to run.
 notes/ 
+
+*.json
+*.csv

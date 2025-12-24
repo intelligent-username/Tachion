@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tachion"
+version = "0.1.0"
+description = "A data collection and analysis project"
+authors = [{name = "intelligent-username"}]
+requires-python = ">=3.8"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["api", "core", "data", "train", "models", "data.equities"]

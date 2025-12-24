@@ -55,6 +55,8 @@ source tach/bin/activate  # macOS/Linux
 tach\Scripts\activate     # Windows
 pip install --upgrade pip
 pip install -r requirements.txt
+# Make the project into a package
+pip install -e .
 ```
 
 ## Usage
