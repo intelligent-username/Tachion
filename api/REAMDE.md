@@ -9,7 +9,7 @@ POST /api/predict
 {
     "asset": "AAPL",
     "horizon": 7,
-    "data": "CSV string or URL"
+    "data": "CSV string"
 }
 ```
 

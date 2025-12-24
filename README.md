@@ -50,9 +50,9 @@ pip install -r requirements.txt
 ### Using Python / pip
 
 ```bash
-python3 -m venv tachion-env
-source tachion-env/bin/activate  # macOS/Linux
-tachion-env\Scripts\activate     # Windows
+python -m venv tach
+source tach/bin/activate  # macOS/Linux
+tach\Scripts\activate     # Windows
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
@@ -67,6 +67,7 @@ uvicorn api.main:app --reload
 ```
 
 3. Send a POST request to `/predict` with your CSV and desired horizon.
+
 4. Visualize predictions and prediction intervals through the integrated frontend.
 
 If tweaking any of the internals of the project, make sure to first read the provided `.md` (markdown) files in the folder you're working in to understand the corresponding specifications.
@@ -103,6 +104,8 @@ Tachion/
 │       └── visualizer.js
 ├── imgs/
 ├── models/
+│   └── README.md
+├── test 
 │   └── README.md
 └── train/
     └── README.md

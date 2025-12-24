@@ -1,0 +1,11 @@
+*.env
+env/
+
+__pycache__/
+*.pyc
+
+*.ipynb_checkpoints*
+.vscode/
+
+# Reminders, formulas, etc. for my own use, might publish later but not necessary for the project to run.
+notes/ 
