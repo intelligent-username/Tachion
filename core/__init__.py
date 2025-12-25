@@ -2,4 +2,4 @@
 
 __version__ = "0.0.1"
 
-from .apis import TwelveDataAPI
+from .tdapi import TwelveDataAPI, call_specific

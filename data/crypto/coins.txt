@@ -1,0 +1,48 @@
+# ---- Crypto S&P 30 Selection ---- $
+
+# Market Anchors
+BTC
+ETH
+
+# Smart Contract Platforms (Tech Giants)
+SOL
+BNB
+ADA
+AVAX
+SUI
+TON
+
+# Layer 2 & Scaling
+ARB
+OP
+POL
+STRK # Scalability representatives tightly correlated to ETH
+
+# Strong predictors
+LINK
+XRP
+XLM
+GRT
+
+# DeFi & RWA (Financials)
+UNI
+AAVE
+MKR
+ONDO
+HYPE
+
+# High-Volatility / Speculative (Purely sentiment-driven)
+DOGE
+SHIB
+PEPE
+WIF
+
+# Legacy & Value ("Stable-ish" Alternativess)
+LTC
+XMR
+BCH
+
+# Artificial Intelligence (Growth/Narrative Sector)
+NEAR
+FET
+RENDER

@@ -77,8 +77,6 @@ FCX
 APD
 NEM
 
-#/ ---- S&P 500 -----/#
-
 # ---- Misc. Importants to account for AI bubble bias, consumer sentiment, ---- #
 
 AMD
@@ -95,8 +93,11 @@ PEP
 
 #/ ---- Misc. Importants ---- /#
 
+#/ ---- S&P 500 -----/#
 
-# ---- 15 Noise ---- #
+
+
+# ---- Non-S&P 15 Noise ---- #
 
 # Retail
 GME
@@ -121,4 +122,4 @@ MARA
 COIN
 DKNG
 
-#/ ---- 15 Noise ---- /#
+#/ ---- Non-S&P 15 Noise ---- /#
