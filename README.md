@@ -1,5 +1,8 @@
 # Tachion
 
+![Python 3.11](https://img.shields.io/badge/python-3.11-blue)
+![License](https://img.shields.io/badge/license-Non--Commercial-red)
+
 <img src="imgs/Logo.svg" width="256" height="256" alt="Logo">
 
 ## Table of Contents
@@ -8,10 +11,13 @@
 2. [Installation](#installation)  
    - [Using Conda](#using-conda)  
    - [Using Python / pip](#using-python--pip)  
-3. [Usage](#usage)  
-4. [File Structure](#file-structure)
-5. [Contributing](#contributing)  
-6. [License](#license)  
+3. [Environment Setup](#environment-setup)
+4. [Data Collection](#data-collection)
+5. [Usage](#usage)  
+6. [File Structure](#file-structure)
+7. [Data Sources](#data-sources)
+8. [Contributing](#contributing)  
+9. [License](#license)  
 
 ---
 
@@ -39,13 +45,29 @@ A different model will be trained for each class. For equities, cryptocurrencies
 
 ### DeepAR Explained
 
+DeepAR is an autoregressive recurrent neural network architecture developed by Amazon for probabilistic time series forecasting. It learns patterns across multiple related time series simultaneously, generating not just point predictions but full probability distributions. This allows Tachion to provide confidence intervals alongside predictions, giving users a sense of uncertainty in the forecast.
+
 ### XGBoost Explained
 
-## Installation
+XGBoost (Extreme Gradient Boosting) is a highly efficient gradient boosting framework that excels at classification tasks. For interest rate predictions, it leverages economic indicators and historical patterns to classify the probability of rate hikes, cuts, or holds. Its ensemble of decision trees captures complex non-linear relationships in macroeconomic data.
 
-The chief way to use Tachion is to go to [tachion.varak.dev](https://tachion.varak.dev) and use the hosted version. If you want to run it locally, follow the instructions below.
+## Usage
 
-### Using Conda
+The chief way to use Tachion is to go to [tachion.varak.dev](https://tachion.varak.dev) and use the hosted version. 
+
+However, if you want to run it locally, follow the instructions below.
+
+### Installation
+
+First, clone the repository:
+
+```bash
+git clone https://github.com/intelligent-username/tachion.git
+```
+
+### Install Dependencies
+
+#### Using Conda
 
 ```bash
 conda create -n tachion python=3.11
@@ -54,7 +76,7 @@ conda install pip
 pip install -r requirements.txt
 ```
 
-### Using Python / pip
+#### Using Python / pip
 
 ```bash
 python -m venv tach
@@ -66,16 +88,52 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-## Usage
+### Environment Setup
 
-1. Prepare your CSV containing historical data (OHLCV or relevant features).
+Create a `.env` file in the project root with the following API keys:
+
+```bash
+# TwelveData API (for equities)
+TD_KEY=your_twelvedata_api_key
+
+# OANDA API (for forex)
+OANDA_KEY=your_oanda_api_token
+OANDA_ACCOUNT_ID=your_oanda_account_id
+```
+
+- Get a TwelveData API key at [twelvedata.com](https://twelvedata.com)
+- Get OANDA credentials at [oanda.com](https://www.oanda.com) (practice account works)
+- Binance API (for crypto) requires no authentication
+
+#### Data Collection
+
+(Optional, could just run the models and not collect data to re-train them)
+
+Collect historical market data using the provided collectors:
+
+```bash
+# Collect equity data (~5 years, 30-min intervals)
+python -m data.equities.collector
+
+# Collect cryptocurrency data (~5 years, 30-min intervals)
+python -m data.crypto.collector
+
+# Collect forex data (~10 years, 30-min intervals)
+python -m data.forex.collector
+```
+
+Data is saved as JSON files in `data/{asset_class}/raw/`.
+
+### Usage
+
+1. Collect historical data using the collectors above.
 2. Start the backend server:
 
 ```bash
-uvicorn api.main:app --reload
+uvicorn api.predict:app --reload
 ```
 
-3. Send a POST request to `/predict` with your CSV and desired horizon.
+3. Send a POST request to `/predict` with your data and desired horizon.
 
 4. Visualize predictions and prediction intervals through the integrated frontend.
 
@@ -83,19 +141,38 @@ If tweaking any of the internals of the project, make sure to first read the pro
 
 ## File Structure
 
-```md
+```
 Tachion/
 ├── LICENSE
 ├── README.md
 ├── requirements.txt
+├── pyproject.toml
+├── .env                    # API keys (not committed)
 ├── api/
-│   ├── REAMDE.md
+│   ├── __init__.py
+│   ├── README.md
 │   └── predict.py
 ├── core/
-│   └── README.md
-├── data/
+│   ├── __init__.py
 │   ├── README.md
-│   └── collect.py
+│   ├── tdapi.py            # TwelveData API wrapper
+│   ├── bapi.py             # Binance API wrapper
+│   └── oapi.py             # OANDA API wrapper
+├── data/
+│   ├── __init__.py
+│   ├── README.md
+│   ├── crypto/
+│   │   ├── coins.txt
+│   │   ├── collector.py
+│   │   └── raw/            # Collected crypto JSON files
+│   ├── equities/
+│   │   ├── companies.txt
+│   │   ├── collector.py
+│   │   └── raw/            # Collected equity JSON files
+│   └── forex/
+│       ├── currencies.txt
+│       ├── collector.py
+│       └── raw/            # Collected forex JSON files
 ├── frontend/
 │   ├── README.md
 │   ├── index.html
@@ -109,16 +186,27 @@ Tachion/
 │   └── js/
 │       ├── api.js
 │       ├── events.js
+│       ├── state.js
 │       ├── ui.js
 │       └── visualizer.js
 ├── imgs/
 ├── models/
 │   └── README.md
-├── test 
+├── test/
 │   └── README.md
 └── train/
     └── README.md
 ```
+
+## Data Sources
+
+Tachion uses the following APIs for market data:
+
+| Asset Class | API | Notes |
+|-------------|-----|-------|
+| Equities | [TwelveData](https://twelvedata.com) | Requires API key (free tier: 8 calls/min) |
+| Crypto | [Binance](https://binance.com) | No authentication required |
+| Forex | [OANDA](https://oanda.com) | Requires practice/live account |
 
 ## Contributing
 

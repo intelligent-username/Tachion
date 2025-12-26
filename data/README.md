@@ -89,3 +89,4 @@ Also, the processed (feature-engineered) files will be converted to `.parquet` f
 ### Forex
 
 - We use the Oanda API to collect historical data and for inference. Currencies are a lot more volatile but dependent on macroeconomic factors, so we'll be collecting ~15 years of data for training instead of 5.
+- Note that the Oanda api sometimes freezes the currency prices during Holidays and around, so there'll be large gaps in the data. Don't forget to engineer features to account for this!
