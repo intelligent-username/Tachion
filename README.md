@@ -33,6 +33,14 @@ Tachion provides point predictions and approximate 95% confidence intervals, ena
 - Lightweight, extensible Python backend  
 - Interactive visualization for historical and predicted values  
 
+## Prediction Mechanism
+
+A different model will be trained for each class. For equities, cryptocurrencies, and commodities, we will use DeepAR (an RNN-based model) to predict the next-period log return based on historical OHLCV data and engineered features. For FOREX, we will use a similar architecture but with more macroeconomic features engineered in. For interest rate hike/cut probabilities, XGBoost will be used to classify the likelihood of a rate change based on historical data and economic indicators.
+
+### DeepAR Explained
+
+### XGBoost Explained
+
 ## Installation
 
 The chief way to use Tachion is to go to [tachion.varak.dev](https://tachion.varak.dev) and use the hosted version. If you want to run it locally, follow the instructions below.

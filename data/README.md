@@ -9,9 +9,9 @@ The data folder is for:
 
 Each dataset is saved in CSV format for easy access during training and evaluation. This data won't be pushed to GitHub right now, but can be easily fetched using the `collector` scripts. Note that you will need to get your own API keys for this. Simply place them in an `.env` file in the main directory of the project.
 
-## Features
+## Feature Engineering
 
-Since we will train multiple different models, each model will expect a (slightly) different set of features.
+We'll be training multiple different models, each to predict a different target. As a result, each asset type will expect a (slightly) different set of features.
 
 Equities and FOREX have time gaps (markets close at 4pm ET on weekdays and at 22:00 UTC Friday respectively, as well as holidays, etc.), so they require extra engineered features (day of the week, time since last  open, and so on) for the model to understand time context.
 
@@ -28,8 +28,6 @@ Note that they are US-only for now (if not a US stock, the model will exclude th
 - `Price`                     <!-- Stock price in dollars -->
 
 - `log_return`                <!-- -log(today's price / yesterday's price) -->
-
-- `Volume`                    <!-- Number of shares traded in thousands -->
 
 - `day_of_week`               <!-- 0 = Monday, 6 = Sunday -->
 
@@ -54,10 +52,10 @@ Note that they are US-only for now (if not a US stock, the model will exclude th
 
 - `VIX`                       <!-- Volatility Index -->
 
+For the S&P log return, we need to delay it by ~1 week or so in order to avoid data leakage (we won't have future S&P data when making predictions for the future price of a given stock).
+
 
 ## For Cryptocurrencies
-
-## For ETFs
 
 ## For FOREX
 
@@ -78,12 +76,16 @@ Within each subfolder,
 For any of the models, if we ever want to re-train it, we'll re-run the relevant `collector.py` script in the relevant subfolder. This will re-fetch data from the APIs and re-process it into CSVs.
 Also, the processed (feature-engineered) files will be converted to `.parquet` format for faster everything.
 
-## Equities
+### Equities
 
 - We call the TwelveData API to collect historical data
 - For inference, we use YFinance (since it's pretty reliable and fast), which we didn't use for historical data since it only goes back a limited time.
 
-## Crypto
+### Crypto
 
 - We call the Binance API to collect historical data
 - For inference, we also use Binance API, since it's extremely good all-around.
+
+### Forex
+
+- We use the Oanda API to collect historical data and for inference. Currencies are a lot more volatile but dependent on macroeconomic factors, so we'll be collecting ~15 years of data for training instead of 5.

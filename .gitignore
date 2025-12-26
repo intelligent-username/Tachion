@@ -1,14 +1,19 @@
+# Environment variables (crcuial btw)
 *.env
 env/
 
+# Cache
 __pycache__/
 *.pyc
+**cache**
 
+# Editor directories
 *.ipynb_checkpoints*
 .vscode/
 
 # Reminders, formulas, etc. for my own use, might publish later but not necessary for the project to run.
 notes/ 
 
+# Data files (might push to Kaggle or something else, but the folders are quite large)
 *.json
 *.csv
