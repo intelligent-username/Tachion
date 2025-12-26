@@ -21,7 +21,6 @@ Tachion is a tool for forecasting market behaviour using historical market data.
 - Crypto  
 - Forex  
 - Commodities (gold, silver, oil)  
-- ETFs  
 - Interest rate hike/cut probabilities  
 
 Tachion provides point predictions and approximate 95% confidence intervals, enabling users to decide whether or not it's a good time to buy or sell.

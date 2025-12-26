@@ -12,16 +12,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def call_specific(path, symbols, num_calls):
+def call_specific_td(path, symbols, num_calls, outputsize=5000, rate_limit=8):
     """
     Make Specific Calls to the TwelveData API 
- 
     """
 
     # JUST REALIZED there's a TwelveData library and I didn't have to make it this complex.
     # Bruh
-    
-    retry_patience = 3
+
+    # Rate limiting: calls per minute max
+    calls_this_minute = 0
+    minute_start = time.time()
     
     for symbol in symbols:
         curr_time = datetime.datetime.now()
@@ -56,32 +57,29 @@ def call_specific(path, symbols, num_calls):
 
         if is_fresh:
             for _ in range(num_calls):
-                retries = 0
-                while retries <= retry_patience:
-                    data = TwelveDataAPI(symbol=symbol, end_date=curr_time)
+                # Rate limit check
+                calls_this_minute += 1
+                if calls_this_minute >= rate_limit:
+                    elapsed = time.time() - minute_start
+                    if elapsed < 60:
+                        sleep_time = 60 - elapsed + 2
+                        print(f"Rate limit approaching. Sleeping {sleep_time:.1f}s...")
+                        time.sleep(sleep_time)
+                    calls_this_minute = 0
+                    minute_start = time.time()
 
-                    if data.get("status") == "error":
-                        msg = data.get("message", "")
-                        if "run out of API credits" in msg:
-                            retries += 1
-                            if retries > retry_patience:
-                                print(f"Rate limit hit for {symbol}. Max retries exceeded. Skipping batch.")
-                                break
-                            print(f"Rate limit hit for {symbol}. Waiting 58s... (retry {retries}/{retry_patience})")
-                            time.sleep(58)
-                            continue  # retry same call
-                        else:
-                            print(f"Error retrieving data for {symbol}: {msg}")
-                            break  # non-rate-limit error: skip
-                    else:
-                        break  # successful call
+                data = TwelveDataAPI(symbol=symbol, end_date=curr_time)
+
+                if data.get("status") == "error":
+                    print(f"Error retrieving data for {symbol}: {data.get('message', '')}")
+                    break
 
                 # If non-rate-limit error caused break, skip this symbol/batch
-                if data.get("status") == "error" and "run out of API credits" not in data.get("message", ""):
+                if data.get("status") == "error":
                     break
 
                 batch = data.get("values", [])
-                if not batch or len(batch) < 5000:
+                if not batch or len(batch) < outputsize:
                     # print(f"Retrieved all data for {symbol}.")
                     break
 
@@ -104,13 +102,28 @@ def call_specific(path, symbols, num_calls):
             new_data = []
 
             while True:
+                # Rate limit check
+                calls_this_minute += 1
+                if calls_this_minute >= rate_limit:
+                    elapsed = time.time() - minute_start
+                    if elapsed < 60:
+                        sleep_time = 60 - elapsed + 2
+                        print(f"Rate limit approaching. Sleeping {sleep_time:.1f}s...")
+                        time.sleep(sleep_time)
+                    calls_this_minute = 0
+                    minute_start = time.time()
+
                 data = TwelveDataAPI(
                     symbol=symbol,
                     start_date=last_dt + datetime.timedelta(minutes=30)
                 )
 
                 if data.get("status") == "error":
-                    print(f"Error fetching {symbol}: {data.get('message','')}")
+                    msg = data.get("message", "")
+                    if "No data is available on the specified dates" in msg:
+                        print(f"No new data for {symbol}; already up to date.")
+                    else:
+                        print(f"Error fetching {symbol}: {msg}")
                     break
 
                 batch = data.get("values", [])
@@ -126,7 +139,7 @@ def call_specific(path, symbols, num_calls):
                 new_data.extend(batch)
                 last_dt = datetime.datetime.strptime(batch[-1]["datetime"], fmt)
 
-                if len(batch) < 5000:
+                if len(batch) < outputsize:
                     break
 
             # Append new data to existing and write
@@ -136,7 +149,7 @@ def call_specific(path, symbols, num_calls):
                     json.dump(full_data, f, indent=4)
 
 def TwelveDataAPI(url="https://api.twelvedata.com/time_series",
-                   interval="30min", outputsize=5000, format="JSON", start_date = None , end_date = datetime.datetime.now(), apikey=None, symbol=None):
+                   interval="30min", outputsize=5000, format="JSON", start_date=None, end_date=None, apikey=None, symbol=None):
     """  
     :param url: TwelveData's Rest API Endpoint
     :param interval: time interval. 
@@ -161,6 +174,9 @@ def TwelveDataAPI(url="https://api.twelvedata.com/time_series",
 
     """
     
+    if end_date is None:
+        end_date = datetime.datetime.now()
+
     if apikey is None:
         apikey = os.getenv("TD_KEY")
     
@@ -172,7 +188,6 @@ def TwelveDataAPI(url="https://api.twelvedata.com/time_series",
 
     
     details = {
-        "apikey": apikey,
         "symbol": symbol,
         "start_date": start_date.strftime("%Y-%m-%d %H:%M:%S") if start_date else None,
         "end_date": end_date.strftime("%Y-%m-%d %H:%M:%S"),
@@ -181,7 +196,14 @@ def TwelveDataAPI(url="https://api.twelvedata.com/time_series",
         "format": format
     }
 
-    response = requests.get(url, params=details)
+    headers = {
+        "Authorization": f"apikey {apikey}",
+        "User-Agent": "tachion-data-collector",
+        # "Accept-Encoding": "gzip, deflate"
+                # ^^ Not needed since responses are so small, but in the future if I change something such that we use more bandwith, we'll need this.
+    }
+
+    response = requests.get(url, params=details, headers=headers)
 
     response.raise_for_status()
 

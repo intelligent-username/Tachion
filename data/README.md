@@ -13,9 +13,11 @@ Each dataset is saved in CSV format for easy access during training and evaluati
 
 Since we will train multiple different models, each model will expect a (slightly) different set of features.
 
-### For Stocks
+Equities and FOREX have time gaps (markets close at 4pm ET on weekdays and at 22:00 UTC Friday respectively, as well as holidays, etc.), so they require extra engineered features (day of the week, time since last  open, and so on) for the model to understand time context.
 
-Note that they are US-only for now (if not a US stock, the model will exclude the S&P feature, but in the future I need to integrate a more robust way of getting a market-wide indicator (country-by-country)). Also, it would be good to add sector-specific indices as features. These are decisions to make when adding final polishes to the project. Of course, for the most optimal micro-optimization, we can add things like earnings reports, and we can train a single model per stock, but that's way out of scope right now.
+### For Equities
+
+Note that they are US-only for now (if not a US stock, the model will exclude the S&P feature, but in the future I need to integrate a more robust way of getting a market-wide indicator (country-by-country)). Also, it would be good to add sector-specific indices (ETFs) as dynamic (covariate) features. These are decisions to make when adding final polishes to the project. Of course, for the most optimal micro-optimization, we can add things like earnings reports, and we can train a single model per stock, but that's way out of scope right now.
 
 <!-- "item_id" in DeepAR terminology -->
 - `Ticker`                    <!-- Stock ticker symbol -->
@@ -69,3 +71,19 @@ Within each subfolder,
 
 - Raw data will be stored in the `raw/` directory of this folder. These are stored in JSON and come straight from the data provider API.
 - Processed datasets are stored in the `processed/` directory.
+
+
+## Data Collection
+
+For any of the models, if we ever want to re-train it, we'll re-run the relevant `collector.py` script in the relevant subfolder. This will re-fetch data from the APIs and re-process it into CSVs.
+Also, the processed (feature-engineered) files will be converted to `.parquet` format for faster everything.
+
+## Equities
+
+- We call the TwelveData API to collect historical data
+- For inference, we use YFinance (since it's pretty reliable and fast), which we didn't use for historical data since it only goes back a limited time.
+
+## Crypto
+
+- We call the Binance API to collect historical data
+- For inference, we also use Binance API, since it's extremely good all-around.

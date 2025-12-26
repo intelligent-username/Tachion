@@ -1,7 +1,7 @@
 """
 Stock prices and S&P500 data collector
-Calls the TwelveData API to collect information for the past ~15000 lines (about 5 years)
-(or less if not available) for 100 randomly selected stocks.
+Calls the TwelveData API to collect information for the past ~15000 lines (about 5 years of TRADING DAYS)
+(or less if not available) for the 79 stocks selected stocks.
 It then collects the past ~15000 lines of S&P500 index data.
 All data is written into CSVs in the raw/ directory.
 """
@@ -11,7 +11,7 @@ import os
 import datetime
 import time
 
-from core import call_specific
+from core import call_specific_td
 
 def write_data(symbols):
     """
@@ -26,8 +26,8 @@ def write_data(symbols):
     # This is for equities specifically, need ~15k
     num_calls = 3
 
-    call_specific(path, symbols=["SPY"], num_calls = num_calls)
-    call_specific(path, symbols=symbols, num_calls = num_calls)
+    call_specific_td(path, symbols=["SPY"], num_calls = num_calls)
+    call_specific_td(path, symbols=symbols, num_calls = num_calls)
 
     # note that the JSON records are written chronologically from newest to oldest
     # In the feature engineering (CSVs), remember to read backwards

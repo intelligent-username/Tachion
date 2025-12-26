@@ -1,7 +1,7 @@
 """
 Crypto prices
-Calls the TwelveData API to collect information for the past ~15000 lines (about 5 years)
-(or less if not available) for 100 randomly selected stocks.
+Calls the Binance API to collect information for the past 5 years
+(or less if not available) for selected cryptocurrencies.
 BTC will be used as a lagging covariate for broader market crypto conditions.
 """
 
@@ -12,11 +12,11 @@ import os
 import datetime
 import time
 
-from core import call_specific
+from core import call_specific_binance
 
 def write_data(symbols):
     """
-    Get ~15000 lines (3 API calls) worth of data for the given list of symbols
+    Get ~87000 lines (87 API calls) worth of data for the given list of symbols
     Using 30 minute intervals.
     The caller will ensure everything is written in chronological order.
     Writes to data/crypto/raw/
@@ -24,22 +24,28 @@ def write_data(symbols):
     path = os.path.join("data", "crypto", "raw")
     os.makedirs(path, exist_ok=True)
 
-    # This is for equities specifically, need ~15k
-    num_calls = 3
+    # Binance returns max 1000 candles per call, need 87 calls for 87k
+    num_calls = 87
 
-    call_specific(path, symbols=symbols, num_calls = num_calls)
+    # Note that the API limits are WAY higher (6000 weights per minute, aka 100 weights per second. Each call is 2 weights, so 50 calls per second)
+    # So we won't HAVE TO wait at all.
 
-    # note that the JSON records are written chronologically from newest to oldest
-    # In the feature engineering (CSVs), remember to read backwards
+    call_specific_binance(path, symbols=symbols, num_calls=num_calls)
+
+    # JSON records are written chronologically (oldest to newest)
 
 if __name__ == "__main__":
-    # A total of 30 cryptocurrencies listed on Coinbase Exchange
+    # A total of 30 coins
 
     print("Collecting data...")
 
     with open("data/crypto/coins.txt", "r") as f:
-        companies = [line.rstrip("\n") for line in f if line[0] != "#" and line != "\n"]
+        coins = []
+        for line in f:
+            line = line.split("#")[0].strip()  # Strip inline comments
+            if line:
+                coins.append(line)  # Binance format: just the symbol (BTC, ETH, etc.)
     
-    write_data(companies)
+    write_data(coins)
 
     print("Finished collecting data.")

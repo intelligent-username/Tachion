@@ -1,3 +1,17 @@
-fastapi
+# All Tachion requirements
+# See the README for installation instructions.
+
+# Currently in Use
 load_dotenv
+
+# Anticipated
+
+# Backend
+fastapi
+
+# Models
 torch
+
+# Data Handling
+pandas
+pyarrow
