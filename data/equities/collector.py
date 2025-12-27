@@ -13,7 +13,7 @@ import time
 
 from core import call_specific_td
 
-def write_data(symbols):
+def write_data_eq(symbols):
     """
     Get ~15000 lines (3 API calls) worth of data for the given list of symbols and S&P500 index
     Using 30 minute intervals.
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     with open("data/equities/companies.txt", "r") as f:
         companies = [line.rstrip("\n") for line in f if line[0] != "#" and line != "\n"]
     
-    write_data(companies)
+    write_data_eq(companies)
 
     print("Finished collecting data.")
     

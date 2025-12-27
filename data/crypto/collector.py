@@ -14,7 +14,7 @@ import time
 
 from core import call_specific_binance
 
-def write_data(symbols):
+def write_data_cr(symbols):
     """
     Get ~87000 lines (87 API calls) worth of data for the given list of symbols
     Using 30 minute intervals.
@@ -46,6 +46,6 @@ if __name__ == "__main__":
             if line:
                 coins.append(line)  # Binance format: just the symbol (BTC, ETH, etc.)
     
-    write_data(coins)
+    write_data_cr(coins)
 
     print("Finished collecting data.")

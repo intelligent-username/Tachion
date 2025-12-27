@@ -11,7 +11,7 @@ import time
 
 from core import call_specific_oanda
 
-def write_data(instruments):
+def write_data_fo(instruments):
     """
     Get ~175000 lines (35 API calls) worth of data for the given list of instruments
     Using 30 minute intervals.
@@ -43,6 +43,6 @@ if __name__ == "__main__":
                 currencies.append(line)  # OANDA format: EUR_USD, GBP_USD, etc.
     
     print(f"Found {len(currencies)} currency pairs to collect.")
-    write_data(currencies)
+    write_data_fo(currencies)
 
     print("Finished collecting forex data.")

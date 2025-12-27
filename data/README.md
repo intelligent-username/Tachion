@@ -1,5 +1,16 @@
 # Data
 
+File Structure
+
+Different folders are for collecting data on different things. 
+
+```
+├── comm            # Commodities (OIL (WTICO, BSO), GOLD, SILVER) going back ~20 years
+├── crypto/         # Important cryptocurrencies + randoms for noise
+├── equities/       # Important equities + randoms for noise
+└── forex/           # Foreign exchange data going back ~15 years
+```
+
 The data folder is for:
 
 - fetching data from an API or local source.
@@ -57,9 +68,19 @@ For the S&P log return, we need to delay it by ~1 week or so in order to avoid d
 
 ## For Cryptocurrencies
 
+To collect historical data, we'll be using the Binance API to collect roughly 5 years of historical data for major cryptocurrencies such as Bitcoin (BTC), Ethereum (ETH), Ripple (XRP), and Litecoin (LTC). Since cryptocurrencies trade 24/7, we don't need to engineer any time-based features. We'll engineer in some features based on Bitcoin price movements, since many altcoins tend to follow Bitcoin's lead.
+
 ## For FOREX
 
+We'll be using the OANDA API to collect roughly 10 years of historical data for major currency pairs such as EUR/USD, GBP/USD, USD/JPY, and AUD/USD.
+
+Since currencies are very stable, it's sufficient to just use historical price data without any engineered features. The model should be able to pick up on the relevant patterns from the historical data alone. Even sudden announcements, such as the tariff changes that were made during the beginning of the new US administration, currencies drop massively for a few days and then quickly revert back to baseline. Changes in currnecy value are mostly driven by longer-term trends. Only in the case of a regime collapse, war, new currency establishment, etc. do currencies change permanently. As a result, we'll only engineer "currency_age" as a feature, which is simply how long the currency pair has been traded for.  
+
 ## For Commodities
+
+We'll be using the OANDA API to collect ~15 years of historical data for commodities such as Oil (WTI Crude, Brent Crude), Gold, and Silver.
+
+For predicing the commodity prices, we'll basically be exclusively using the recent historical data of the commodity itself. No features will be engineered, as no macro factors are *really* responsible for commodity price shifts (except for gradual changes over time, which, one again, can be captured by the historical price data itself), rather these are sudden supply/demand shocks that are caused by wars, geopolitical decisions, natural disasters, etc. that are basically impossible to account for, let alone predict.
 
 ## Interest Rates
 
