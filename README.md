@@ -157,6 +157,8 @@ If tweaking any of the internals of the project, make sure to first read the pro
 
 ## File Structure
 
+Below are some of the important files and folders in this project:
+
 ```
 Tachion/
 ├── LICENSE
@@ -220,9 +222,9 @@ Tachion uses the following APIs for market data:
 
 | Asset Class | API | Notes |
 |-------------|-----|-------|
-| Equities | [TwelveData](https://twelvedata.com) | Requires API key (free tier: 8 calls/min) |
+| Equities | [TwelveData](https://twelvedata.com) | Requires API key |
 | Crypto | [Binance](https://binance.com) | No authentication required |
-| Forex | [OANDA](https://oanda.com) | Requires practice/live account |
+| Forex | [OANDA](https://oanda.com) | Requires practice/live account for API key|
 
 ## Contributing
 
@@ -234,4 +236,4 @@ Contributions are welcome. Please follow these guidelines:
 
 ## License
 
-This project is for non-commercial use only. Attribution is required. For commercial inquiries, please contact [inquiries@varak.dev](mailto:inquiries@varak.dev). For full license details, see the [LICENSE](LICENSE) file.
+This project is for non-commercial use only. Attribution is required. For commercial inquiries, please contact [inquiries@varak.dev](mailto:inquiries@varak.dev). For full license details, see the [LICENSE](LICENSE).

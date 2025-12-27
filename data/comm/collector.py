@@ -24,7 +24,7 @@ def write_data_co(instruments):
     path = os.path.join("data", "comm", "raw")
     os.makedirs(path, exist_ok=True)
 
-    # OANDA returns max 5000 candles per call
+    # 5000 candles per call
     # 15 years × 260 days × 23 hours × 2 (30-min) = ~180,000 candles
     # ~180,000 / 5000 = ~36 calls
     num_calls = 36
