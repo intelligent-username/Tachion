@@ -1,6 +1,6 @@
 # Test Suite
 
-Unit tests for Tachion's core API wrappers and data collectors.
+Unit tests for all scripts. Will expand as needed.
 
 ## Structure
 
@@ -35,34 +35,40 @@ pytest --cov=core --cov=data --cov-report=term-missing
 ## Test Coverage
 
 Each function has 7 tests:
+
 - **4 Basic Cases**: Normal use cases and expected behavior
 - **3 Edge Cases**: Error handling, empty inputs, and boundary conditions
 
 ### API Wrapper Tests
 
-| Module | Function | Basic | Edge |
-|--------|----------|-------|------|
-| `bapi.py` | `BinanceAPI()` | 4 | 3 |
-| `bapi.py` | `call_specific_binance()` | 4 | 3 |
-| `tdapi.py` | `TwelveDataAPI()` | 4 | 3 |
-| `tdapi.py` | `call_specific_td()` | 4 | 3 |
-| `oapi.py` | `OandaAPI()` | 4 | 3 |
-| `oapi.py` | `call_specific_oanda()` | 4 | 3 |
+Files from the `core/` folder. We'll trust that the API is returning the correct values (no way to test that here). These tests ensure that the wrapper functions respond with the expected behaviour.
+
+|   Module   |          Function          |
+|------------|--------------------------- |
+| `bapi.py`  | `BinanceAPI()`             |
+| `bapi.py`  | `call_specific_binance()`  |
+| `tdapi.py` | `TwelveDataAPI()`          |
+| `tdapi.py` | `call_specific_td()`       |
+| `oapi.py`  | `OandaAPI()`               |
+| `oapi.py`  | `call_specific_oanda()`    |
 
 ### Collector Tests
 
-| Module | Function | Basic | Edge |
-|--------|----------|-------|------|
-| `crypto/collector.py` | `write_data()` | 4 | 3 |
-| `equities/collector.py` | `write_data()` | 4 | 3 |
-| `forex/collector.py` | `write_data()` | 4 | 3 |
+Files from the `data` folder.
+
+|         Module          |    Function     |
+|-------------------------|---------------- |
+| `crypto/collector.py`   | `write_data()`  |
+| `equities/collector.py` | `write_data()`  |
+| `forex/collector.py`    | `write_data()`  |
 
 ## Dependencies
 
 - `pytest` - Test framework
-- `pytest-cov` (optional) - Coverage reports
+- `pytest-cov` (optional) - FOr coverage reports
 
 Install test dependencies:
+
 ```bash
 pip install pytest pytest-cov
 ```

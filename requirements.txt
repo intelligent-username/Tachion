@@ -2,16 +2,25 @@
 # See the README for installation instructions.
 
 # Currently in Use
-load_dotenv
+load_dotenv==0.1.0
 
 # Anticipated
 
 # Backend
-fastapi
+fastapi==0.104.1
 
 # Models
-torch
+torch==2.1.0
 
 # Data Handling
-pandas
-pyarrow
+pandas==2.1.0
+pyarrow==14.0.0
+
+# API
+fredapi==0.5.1
+yfinance==0.2.28
+
+# Don't need, but might if I rewrite calls: 
+# twelve-data
+# python-binance
+# oandapyV20

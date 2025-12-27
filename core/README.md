@@ -11,7 +11,7 @@ The `Core` module is for any code that is repeated. It contains utilities for:
 
 ## What each file is for
 
-```md
-- `tdapi.py` - Contains TwelveDataAPI function and call_specific function to make API calls to Twelve Data.
-
-```
+- `tapi.py`     # For making API calls to TwelveData
+- `bapi.py`      # For making API calls to Binance.
+- `oapi.py`      # For making API calls to Oanda.
+- `fapi.py`      # For making API calls to the Federal Reserve using the fredapi library.

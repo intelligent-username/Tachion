@@ -71,12 +71,12 @@ First, clone the repository:
 git clone https://github.com/intelligent-username/tachion.git
 ```
 
-### Install Dependencies
+### Dependencies
 
 #### Using Conda
 
 ```bash
-conda create -n tachion python=3.11
+conda create -n tachion python=3.11 -y  # the -y auto-approves prompts
 conda activate tachion
 conda install pip
 pip install -r requirements.txt
@@ -155,7 +155,11 @@ uvicorn api.predict:app --reload
 
 If tweaking any of the internals of the project, make sure to first read the provided `.md` (markdown) files in the folder you're working in to understand the corresponding specifications.
 
+For a better understanding of how the project is structured, have a look at the file structure below.
+
 ## File Structure
+
+Below are some of the important files and folders in this project:
 
 ```
 Tachion/
@@ -214,15 +218,23 @@ Tachion/
     └── README.md
 ```
 
-## Data Sources
+## Attributions
 
-Tachion uses the following APIs for market data:
+Tachion uses the APIs from the following for market data:
 
-| Asset Class | API | Notes |
-|-------------|-----|-------|
-| Equities | [TwelveData](https://twelvedata.com) | Requires API key (free tier: 8 calls/min) |
-| Crypto | [Binance](https://binance.com) | No authentication required |
-| Forex | [OANDA](https://oanda.com) | Requires practice/live account |
+|    Asset Class      |                   API                  |            Notes         |
+| ------------------- |----------------------------------------|------------------------- |
+| Equities            | [TwelveData](https://twelvedata.com)   |    Requires API key      |
+| Crypto              | [Binance](https://binance.com)         | No authentication needed |
+| Forex, Commodities  | [OANDA](https://oanda.com)             | API key requires account |
+| Interest-Related    | [FRED](https://fred.stlouisfed.org//)  | Requires API key         |
+| yfinance            | [yfinance](https://finance.yahoo.com/) | No authentication needed |
+
+Other sources:
+
+- Cleveland NowCast for real interest rates and CPI consensus: 
+    - [Cleveland Fed NowCast](https://www.clevelandfed.org/indicators-and-data/inflation-expectations)
+    - [Excel File](https://www.clevelandfed.org/-/media/files/webcharts/inflationexpectations/inflation-expectations.xlsx?sc_lang=en&hash=C27818913D96CEDD80E3136B9946CFA7)
 
 ## Contributing
 
@@ -234,4 +246,4 @@ Contributions are welcome. Please follow these guidelines:
 
 ## License
 
-This project is for non-commercial use only. Attribution is required. For commercial inquiries, please contact [inquiries@varak.dev](mailto:inquiries@varak.dev). For full license details, see the [LICENSE](LICENSE) file.
+This project is for non-commercial use only. Attribution is required. For commercial inquiries, please contact [inquiries@varak.dev](mailto:inquiries@varak.dev). For full license details, see the [LICENSE](LICENSE).

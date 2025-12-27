@@ -9,7 +9,7 @@ import os
 import tempfile
 from unittest.mock import patch, MagicMock
 
-from core.bapi import BinanceAPI, call_specific_binance
+from core.biapi import BinanceAPI, call_specific_binance
 
 
 # ============================================================================

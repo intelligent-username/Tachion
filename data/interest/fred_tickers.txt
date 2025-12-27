@@ -1,0 +1,11 @@
+# Personal Consumption Expenditures 3 months, annualized
+
+PCEPILFE
+
+# Unemployment rate, Noncyclical Rate of Unemployment
+UNRATE
+NROU
+
+T10Y2Y
+NFCI
+DFEDTARU

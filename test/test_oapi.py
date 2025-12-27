@@ -9,7 +9,7 @@ import os
 import tempfile
 from unittest.mock import patch, MagicMock
 
-from core.oapi import OandaAPI, call_specific_oanda
+from core.oaapi import OandaAPI, call_specific_oanda
 
 
 # ============================================================================

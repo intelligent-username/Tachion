@@ -1,2 +1,1 @@
-# Package up the project for Python nicely :)
-
+# Package up the project for Python nicely

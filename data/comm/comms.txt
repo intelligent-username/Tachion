@@ -1,0 +1,12 @@
+# Gold
+XAU_USD
+
+# Silver
+XAG_USD
+
+# Oil
+
+WTICO_USD
+BCO_USD
+
+# Short list this time :)
