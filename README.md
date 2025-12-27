@@ -45,11 +45,17 @@ A different model will be trained for each class. For equities, cryptocurrencies
 
 ### DeepAR Explained
 
-DeepAR is an autoregressive recurrent neural network architecture developed by Amazon for probabilistic time series forecasting. It learns patterns across multiple related time series simultaneously, generating not just point predictions but full probability distributions. This allows Tachion to provide confidence intervals alongside predictions, giving users a sense of uncertainty in the forecast.
+DeepAR is an autoregressive recurrent neural network architecture developed by Amazon for probabilistic time series forecasting. It learns patterns across multiple related time series simultaneously, generating not just point predictions but full probability distributions.
+
+Once the learning is done, DeepAR would have generated a statistical distribution that best fits the simulations. We pick the statistical distribution to fit to beforehand, in this case, student's t-distribution, which is well-suited for financial returns due to its heavy tails. During inference, we just do some math based on the parameters of this distribution to get the desired quantiles (2.5th, 50th, 97.5th percentiles). Note, if the distribution doesn't fit well, we can always change it. If the math is "hard" to do, we can always just sample instead (or maybe even not even make a distribution but just plot a histogram directly and get quantiles from that).
+
+This allows Tachion to provide confidence intervals alongside predictions, giving users a sense of uncertainty in the forecast.
 
 ### XGBoost Explained
 
-XGBoost (Extreme Gradient Boosting) is a highly efficient gradient boosting framework that excels at classification tasks. For interest rate predictions, it leverages economic indicators and historical patterns to classify the probability of rate hikes, cuts, or holds. Its ensemble of decision trees captures complex non-linear relationships in macroeconomic data.
+When it comes to interest rate predictions, we're no longer predicting continuous values, but categorical ones (hike/cut/hold). This requires us to perform classification instad of regression. There are [many algorithms for classification](https://github.com/intelligent-username/classification). For this project, we'll go with XGBoost.
+
+XGBoost (Extreme Gradient Boosting) is a highly efficient gradient boosting framework that excels at classification tasks. For interest rate predictions, it leverages economic indicators and historical patterns to classify the probability of rate hikes, cuts, or holds. Its ensemble of decision trees captures complex non-linear relationships in macroeconomic data. This, in turn, allows for decently robust predictions (as the Fed, in theory, is supposed to make data-driven decisions). However, it will require a lot of much feature engineering to get right.
 
 ## Usage
 
@@ -123,6 +129,16 @@ python -m data.forex.collector
 ```
 
 Data is saved as JSON files in `data/{asset_class}/raw/`.
+
+#### Testing
+
+(Optional, if you clone this repo you can assume everything works as expected).
+
+To run the test suite, navigate to the project root and execute:
+
+```bash
+pytest
+```
 
 ### Usage
 

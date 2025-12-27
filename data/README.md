@@ -61,6 +61,62 @@ For the S&P log return, we need to delay it by ~1 week or so in order to avoid d
 
 ## For Commodities
 
+## Interest Rates
+
+Since we're using XGBoost Classification (Hike/Cut/Hold), we need to engineer features that represent the "Reaction Function" of the central bank. Once again, note that we're currently only dealing with the US Fed.
+
+There are three "types" of factors I will consider:
+
+- Macreoeconomic fundamentals
+- Market-implied expectations
+- Financial conditions & sentiment
+
+I'm not an economist, so I've done my best to research the most commonly cited factors that influence Fed decisions. Also, not all of these features will be included, this is just a list for later reference. This will require a lot of data collection and feature engineering.
+
+### 1. Macroeconomic Factors
+
+Inflation and employment. These capture the core drivers of monetary policy: Inflation and Employment.
+
+* **Inflation Momentum:** * `CPI_YoY` / `PCE_YoY`: The raw level.
+* `Core_PCE_3M_Ann`: 3-month annualized Core PCE (captures recent trends better than YoY).
+* `CPI_Surprise`: Difference between actual CPI and consensus forecast.
+
+
+* **Labor Market Tightness:**
+* `Unemployment_Gap`: Current Unemployment minus NAIRU (Natural Rate).
+* `NonFarm_Payrolls_Delta`: Month-over-month change in jobs.
+* `Wage_Growth_YoY`: Average hourly earnings (signals cost-push inflation).
+
+
+* **Economic Activity:**
+* `GDP_Nowcast`: Real-time GDP estimates (e.g., Atlanta Fed's GDPNow).
+* `ISM_Manufacturing_PMI`: A leading indicator of industrial health.
+
+
+### 2. Market-Implied Expectations (The "Efficient Market" Features)
+
+The market usually prices in the move before it happens. XGBoost will rely heavily on these.
+
+* **Fed Funds Futures:** * `Implied_Rate_Next_Meeting`: Implied rate from the 30-day Fed Funds Futures.
+* `Rate_Probability_Delta`: Daily change in the CME FedWatch probabilities for a hike vs. cut.
+
+
+* **Yield Curve Dynamics:**
+* `2Y_10Y_Spread`: Curve inversion is a primary signal for cuts/recession.
+* `3M_10Y_Spread`: Often cited by the Fed as their preferred recession indicator.
+* `Real_Yields`: 10-year TIPS yield (represents "tightness" of policy).
+
+
+
+### 3. Financial Conditions & Sentiment
+
+* **Financial Conditions Index (FCI):** Use the GS or Bloomberg FCI. Higher = tighter conditions, reducing the need for a hike.
+* **VIX Index:** High volatility (stress) strongly correlates with a "Hold" or "Cut" bias.
+* **NLP-derived Hawk/Dove Score:** * Vectorize the most recent FOMC Statement or Minutes.
+* `Statement_Sentiment_Delta`: Change in sentiment score compared to the previous meeting.
+
+
+
 ## Data Storage
 
 Each asset class (stocks, crypto, ETFs, FOREX, commodities) will have its own subfolder within this `data/` directory.

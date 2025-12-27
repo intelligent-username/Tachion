@@ -27,7 +27,8 @@ Each asset class has its own subfolder, and, within each subfolder, we train thr
 - Training scripts:
   - Import features from `core/features.py`
   - Align targets for the chosen prediction horizon
-  - Fit models using XGBoost with quantile loss
+  - Fit interest rates / models using XGBoost with quantile loss
+    - SMOTE to handle class imbalance (since usually we hold rates steady)
   - Save trained artifacts in `models/`
 
 All scripts are designed to be reusable across assets and quantiles.
