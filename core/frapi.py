@@ -23,13 +23,13 @@ def call_specific_fred(path, series_ids, rate_limit=119):
     Fetch FRED series data and write to JSON files.
 
     :param path: Directory path to write JSON files to
-    :param series_ids: List of FRED series IDs (e.g., ["UNRATE", "T10Y2Y"])
+    :param series_ids: List of FRED series IDs (e.g., ["UNRATE", "GS2"])
     :param rate_limit: Maximum API calls per minute (default 119, FRED limit is 120)
     """
 
-    api_key = os.getenv("FRED_API_KEY")
+    api_key = os.getenv("FRED_KEY")
     if not api_key:
-        raise ValueError("FRED_API_KEY not found in environment variables. Please set it in .env file.")
+        raise ValueError("FRED_KEY not found in environment variables. Please set it in .env file.")
 
     fred = Fred(api_key=api_key)
 
@@ -37,11 +37,13 @@ def call_specific_fred(path, series_ids, rate_limit=119):
     calls_this_minute = 0
     minute_start = time.time()
 
-    # 15 years back from today
+    # Date range
     end_date = datetime.datetime.now()
-    start_date = end_date - datetime.timedelta(days=15 * 365)
 
     for series_id in series_ids:
+        # Reset start_date for each symbol (15 years back)
+        start_date = end_date - datetime.timedelta(days=15 * 365)
+        
         file_path = os.path.join(path, f"{series_id}.json")
 
         # Check if file exists and get latest date
@@ -111,9 +113,6 @@ def call_specific_fred(path, series_ids, rate_limit=119):
                 print(f"Updated {series_id}: added {len(new_values)} new records (total: {len(full_data)})")
             else:
                 print(f"No updates needed for {series_id}")
-
-        # Reset start_date for next symbol
-        start_date = end_date - datetime.timedelta(days=15 * 365)
 
 
 def FredAPI(fred, series_id, start_date=None, end_date=None):

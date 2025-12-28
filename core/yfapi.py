@@ -1,9 +1,5 @@
 """
 YFinance (Yahoo Finance) API Call Utils.
-
-YFinance is a wrapper around Yahoo Finance's API.
-No API key required, but rate limits apply (be reasonable).
-Good for historical price data, especially for futures like ZQ=F (Fed Funds Futures).
 """
 
 import os

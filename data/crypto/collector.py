@@ -11,6 +11,7 @@ import json
 import os
 import datetime
 import time
+from importlib import resources
 
 from core import call_specific_binance
 
@@ -39,13 +40,15 @@ if __name__ == "__main__":
 
     print("Collecting data...")
 
-    with open("data/crypto/coins.txt", "r") as f:
+    pkg = __package__  # should be 'data.crypto'
+    txt = resources.files(pkg).joinpath('coins.txt')
+    with txt.open('r') as f:
         coins = []
         for line in f:
             line = line.split("#")[0].strip()  # Strip inline comments
             if line:
                 coins.append(line)  # Binance format: just the symbol (BTC, ETH, etc.)
-    
+
     write_data_cr(coins)
 
     print("Finished collecting data.")

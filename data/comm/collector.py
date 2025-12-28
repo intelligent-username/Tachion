@@ -10,6 +10,7 @@ import json
 import os
 import datetime
 import time
+from importlib import resources
 
 from core import call_specific_oanda
 
@@ -39,7 +40,9 @@ if __name__ == "__main__":
 
     print("Collecting commodity data...")
 
-    with open("data/comm/comms.txt", "r") as f:
+    pkg = __package__  # should be 'data.comm'
+    txt = resources.files(pkg).joinpath('comms.txt')
+    with txt.open('r') as f:
         commodities = []
         for line in f:
             line = line.split("#")[0].strip()

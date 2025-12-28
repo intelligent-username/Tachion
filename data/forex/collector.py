@@ -8,6 +8,7 @@ import json
 import os
 import datetime
 import time
+from importlib import resources
 
 from core import call_specific_oanda
 
@@ -35,13 +36,15 @@ if __name__ == "__main__":
 
     print("Collecting forex data...")
 
-    with open("data/forex/currencies.txt", "r") as f:
+    pkg = __package__  # should be 'data.forex'
+    txt = resources.files(pkg).joinpath('currencies.txt')
+    with txt.open('r') as f:
         currencies = []
         for line in f:
             line = line.split("#")[0].strip()  # Strip inline comments
             if line:
                 currencies.append(line)  # OANDA format: EUR_USD, GBP_USD, etc.
-    
+
     print(f"Found {len(currencies)} currency pairs to collect.")
     write_data_fo(currencies)
 

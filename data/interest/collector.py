@@ -1,5 +1,3 @@
-
-
 """
 Interest Rate and Macroeconomic Indicators Collector
 
@@ -8,49 +6,73 @@ Collects data from two sources:
    - PCEPILFE: Personal Consumption Expenditures (inflation measure)
    - UNRATE: Unemployment Rate
    - NROU: Noncyclical Rate of Unemployment  
-   - T10Y2Y: 10-Year minus 2-Year Treasury spread (yield curve)
+   - GS3M: 3-Month Treasury yield
+   - GS2: 2-Year Treasury yield
+   - GS10: 10-Year Treasury yield
    - NFCI: National Financial Conditions Index
    - DFEDTARU: Federal Funds Target Rate Upper Bound
 
-2. Yahoo Finance - for Fed Funds Futures (ZQ=F) implied rates
+Also computes:
+   - Spread_3M_2Y = GS3M - GS2
+   - Spread_2Y_10Y = GS2 - GS10
 """
 
+import json
 import os
-from core import call_specific_fred, call_specific_yf
+import pandas as pd
+from core import call_specific_fred
 
 
 def collect_fred_data(series_ids):
-    """
-    Collect FRED economic indicator data going back 15 years.
-    FRED API returns all data in one call (no pagination needed).
-    Writes to data/interest/raw/
-    
-    :param series_ids: List of FRED series IDs to collect
-    """
     path = os.path.join("data", "interest", "raw")
     os.makedirs(path, exist_ok=True)
 
     call_specific_fred(path, series_ids=series_ids)
 
+    # JSON-compatible yield spread computation
+    gs3m_file = os.path.join(path, "GS3M.json")
+    gs2_file = os.path.join(path, "GS2.json")
+    gs10_file = os.path.join(path, "GS10.json")
 
-def collect_yahoo_data(symbols):
-    """
-    Collect Yahoo Finance data (e.g., Fed Funds Futures) going back 15 years.
-    Uses daily intervals for consistency with FRED data.
-    Writes to data/interest/raw/
-    
-    :param symbols: List of Yahoo Finance ticker symbols to collect
-    """
-    path = os.path.join("data", "interest", "raw")
-    os.makedirs(path, exist_ok=True)
+    if all(os.path.exists(f) for f in [gs3m_file, gs2_file, gs10_file]):
+        import json
+        import pandas as pd
 
-    call_specific_yf(path, symbols=symbols, interval="1d")
+        with open(gs3m_file, "r") as f:
+            df_3m = pd.DataFrame(json.load(f))
+            df_3m['DATE'] = pd.to_datetime(df_3m['datetime'])
+            df_3m.set_index('DATE', inplace=True)
+            df_3m.rename(columns={'value':'GS3M'}, inplace=True)
+
+        with open(gs2_file, "r") as f:
+            df_2y = pd.DataFrame(json.load(f))
+            df_2y['DATE'] = pd.to_datetime(df_2y['datetime'])
+            df_2y.set_index('DATE', inplace=True)
+            df_2y.rename(columns={'value':'GS2'}, inplace=True)
+
+        with open(gs10_file, "r") as f:
+            df_10y = pd.DataFrame(json.load(f))
+            df_10y['DATE'] = pd.to_datetime(df_10y['datetime'])
+            df_10y.set_index('DATE', inplace=True)
+            df_10y.rename(columns={'value':'GS10'}, inplace=True)
+
+        # Align on dates
+        df = pd.concat([df_3m, df_2y, df_10y], axis=1, join='inner')
+
+        # Compute spreads
+        df['Spread_3M_2Y'] = df['GS3M'] - df['GS2']
+        df['Spread_2Y_10Y'] = df['GS2'] - df['GS10']
+
+        # Save computed spreads
+        df[['Spread_3M_2Y', 'Spread_2Y_10Y']].to_csv(os.path.join(path, "YieldCurveSpreads.csv"))
+        print("Yield curve spreads computed and saved.")
+
 
 
 def collect():
     """
-    Main collection function that gathers all interest rate and macro data.
-    Reads tickers from fred_tickers.txt and yahoo_tickers.txt
+    Gather all interest rate and macro data.
+    Reads tickers from fred_tickers.txt
     """
     # Read FRED tickers
     fred_tickers = []
@@ -60,23 +82,10 @@ def collect():
             if line:
                 fred_tickers.append(line)
 
-    # Read Yahoo tickers
-    yahoo_tickers = []
-    with open("data/interest/yahoo_tickers.txt", "r") as f:
-        for line in f:
-            line = line.split("#")[0].strip()  # Strip inline comments
-            if line:
-                yahoo_tickers.append(line)
-
     print(f"Collecting {len(fred_tickers)} FRED series...")
     collect_fred_data(fred_tickers)
-
-    print(f"\nCollecting {len(yahoo_tickers)} Yahoo Finance tickers...")
-    collect_yahoo_data(yahoo_tickers)
 
 
 if __name__ == "__main__":
     print("Collecting interest rate and macroeconomic data...")
-    
     collect()
-    

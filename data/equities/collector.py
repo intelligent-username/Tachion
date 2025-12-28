@@ -10,6 +10,7 @@ import json
 import os
 import datetime
 import time
+from importlib import resources
 
 from core import call_specific_td
 
@@ -42,9 +43,12 @@ if __name__ == "__main__":
 
     print("Collecting data...")
 
-    with open("data/equities/companies.txt", "r") as f:
-        companies = [line.rstrip("\n") for line in f if line[0] != "#" and line != "\n"]
-    
+    # Load companies.txt from package resources
+    pkg = __package__  # should be 'data.equities'
+    txt = resources.files(pkg).joinpath('companies.txt')
+    with txt.open('r') as f:
+        companies = [line.rstrip("\n") for line in f if line.strip() and not line.lstrip().startswith('#')]
+
     write_data_eq(companies)
 
     print("Finished collecting data.")
