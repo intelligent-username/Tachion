@@ -1,16 +1,14 @@
 # Test Suite
 
-Unit tests for all scripts. Will expand as needed.
+Unit tests for all scripts. Expands as needed.
 
 ## Structure
 
 ```
 test/
-├── conftest.py          # Pytest configuration & shared fixtures
-├── test_bapi.py         # Binance API wrapper tests (14 tests)
-├── test_tdapi.py        # TwelveData API wrapper tests (14 tests)
-├── test_oapi.py         # OANDA API wrapper tests (14 tests)
-└── test_collectors.py   # Data collector tests (21 tests)
+├── api-callers/         # API wrapper tests
+├── collectors/          # The API callers to get raw data
+└── conftest.py          # Pytest configuration
 ```
 
 ## Running Tests

@@ -167,18 +167,22 @@ Tachion/
 ├── README.md
 ├── requirements.txt
 ├── pyproject.toml
-├── .env                    # API keys (not committed)
-├── api/
+├── .env                    # API keys (not committed but necessary to run project locally)
+├── api/                    # Proprietary FastAPI backend
 │   ├── __init__.py
 │   ├── README.md
 │   └── predict.py
-├── core/
+|
+├── core/                   # Reusable endpoints
 │   ├── __init__.py
 │   ├── README.md
 │   ├── tdapi.py            # TwelveData API wrapper
-│   ├── bapi.py             # Binance API wrapper
-│   └── oapi.py             # OANDA API wrapper
-├── data/
+│   ├── biapi.py            # Binance API wrapper
+│   ├── oaapi.py            # OANDA API 
+│   ├── frapi.py            # FRED API wrapper
+│   └── yfapi.py            # yfinance API wrapper
+|
+├── data/                   # Data collection and preparation
 │   ├── __init__.py
 │   ├── README.md
 │   ├── crypto/
@@ -193,6 +197,7 @@ Tachion/
 │       ├── currencies.txt
 │       ├── collector.py
 │       └── raw/            # Collected forex JSON files
+|
 ├── frontend/
 │   ├── README.md
 │   ├── index.html
@@ -209,12 +214,13 @@ Tachion/
 │       ├── state.js
 │       ├── ui.js
 │       └── visualizer.js
+|
 ├── imgs/
-├── models/
+├── models/             # Pre-trained models
 │   └── README.md
-├── test/
-│   └── README.md
-└── train/
+├── test/               # Lots of tests
+│
+└── train/              # Model definitions & training loop
     └── README.md
 ```
 
@@ -234,7 +240,7 @@ Other sources:
 
 - Cleveland NowCast for real interest rates and CPI consensus: 
     - [Cleveland Fed NowCast](https://www.clevelandfed.org/indicators-and-data/inflation-expectations)
-    - [Excel File](https://www.clevelandfed.org/-/media/files/webcharts/inflationexpectations/inflation-expectations.xlsx?sc_lang=en&hash=C27818913D96CEDD80E3136B9946CFA7)
+    - [Original Excel File](https://www.clevelandfed.org/-/media/files/webcharts/inflationexpectations/inflation-expectations.xlsx?sc_lang=en&hash=C27818913D96CEDD80E3136B9946CFA7)
 
 ## Contributing
 
@@ -246,4 +252,6 @@ Contributions are welcome. Please follow these guidelines:
 
 ## License
 
-This project is for non-commercial use only. Attribution is required. For commercial inquiries, please contact [inquiries@varak.dev](mailto:inquiries@varak.dev). For full license details, see the [LICENSE](LICENSE).
+Attribution is required. This project is for non-commercial use only. For commercial inquiries, please contact [inquiries@varak.dev](mailto:inquiries@varak.dev).
+
+For full license details, see the [LICENSE](LICENSE).

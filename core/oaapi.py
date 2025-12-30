@@ -288,9 +288,10 @@ def OandaAPI(url_base="https://api-fxpractice.oanda.com/v3/instruments",
             "status": "error",
             "message": f"Request error: {str(e)}"
         }
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Unexpected error: {str(e)}"
-        }
-
+    except ValueError:
+        raise
+    # except Exception as e:
+    #     return {
+    #         "status": "error",
+    #         "message": f"Unexpected error: {str(e)}"
+    #     }

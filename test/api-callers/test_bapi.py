@@ -1,5 +1,6 @@
 """
-Unit tests for core/bapi.py - Binance API wrapper
+Unit tests for the Binance API wrapper
+In core/biapi.py
 """
 
 import pytest
@@ -97,7 +98,7 @@ class TestCallSpecificBinance:
         with tempfile.TemporaryDirectory() as tmpdir:
             subdir = os.path.join(tmpdir, "nonexistent", "path")
             
-            with patch('core.bapi.BinanceAPI') as mock_api:
+            with patch('core.biapi.BinanceAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": []}
                 
                 # Should not raise even if directory doesn't exist
@@ -111,7 +112,7 @@ class TestCallSpecificBinance:
                  "low": "99", "close": "100.5", "volume": "1000"}
             ]
             
-            with patch('core.bapi.BinanceAPI') as mock_api:
+            with patch('core.biapi.BinanceAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": mock_values}
                 
                 call_specific_binance(tmpdir, symbols=["TEST"], num_calls=1)
@@ -131,7 +132,7 @@ class TestCallSpecificBinance:
                  "low": "99", "close": "100.5", "volume": "1000"}
             ]
             
-            with patch('core.bapi.BinanceAPI') as mock_api:
+            with patch('core.biapi.BinanceAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": mock_values}
                 
                 call_specific_binance(tmpdir, symbols=["SYM1", "SYM2"], num_calls=1)
@@ -152,7 +153,7 @@ class TestCallSpecificBinance:
                      "high": "101", "low": "99", "close": "100.5", "volume": "1000"}
                 ] * 1000}  # Return full batch to trigger more calls
             
-            with patch('core.bapi.BinanceAPI', side_effect=mock_api_call):
+            with patch('core.biapi.BinanceAPI', side_effect=mock_api_call):
                 call_specific_binance(tmpdir, symbols=["BTC"], num_calls=3)
                 
             assert call_count == 3
@@ -162,7 +163,7 @@ class TestCallSpecificBinance:
     def test_handles_api_error(self):
         """Test that function handles API errors gracefully"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch('core.bapi.BinanceAPI') as mock_api:
+            with patch('core.biapi.BinanceAPI') as mock_api:
                 mock_api.return_value = {"status": "error", "message": "API Error"}
                 
                 # Should not raise
@@ -171,7 +172,7 @@ class TestCallSpecificBinance:
     def test_handles_empty_response(self):
         """Test that function handles empty response"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch('core.bapi.BinanceAPI') as mock_api:
+            with patch('core.biapi.BinanceAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": []}
                 
                 call_specific_binance(tmpdir, symbols=["BTC"], num_calls=1)
@@ -190,7 +191,7 @@ class TestCallSpecificBinance:
                  "low": "99", "close": "100.5", "volume": "1000"}
             ]
             
-            with patch('core.bapi.BinanceAPI') as mock_api:
+            with patch('core.biapi.BinanceAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": mock_values}
                 
                 call_specific_binance(tmpdir, symbols=["BTC"], num_calls=1)

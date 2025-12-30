@@ -97,6 +97,8 @@ def call_specific_fred(path, series_ids, rate_limit=119):
 
         if is_fresh:
             # Write fresh data
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
             with open(file_path, "w") as f:
                 json.dump(new_values, f, indent=4)
             print(f"Wrote {len(new_values)} records for {series_id} to {file_path}")

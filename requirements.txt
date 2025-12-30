@@ -26,5 +26,15 @@ yfinance==0.2.54
 # python-binance
 # oandapyV20
 
+# Testing
+pytest==7.4.4
+
+
+
+
+
+
+# MISC
+
 # To run .ipynb files (project doesn't need this but I do)
 #ipykernel
