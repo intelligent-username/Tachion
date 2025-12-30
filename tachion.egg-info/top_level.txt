@@ -1,5 +1,0 @@
-api
-core
-data
-models
-train
