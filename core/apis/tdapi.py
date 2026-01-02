@@ -47,7 +47,7 @@ def call_specific_td(path, symbols, num_calls, outputsize=5000, rate_limit=8):
             for _ in range(num_calls):
 
                 while True:
-                    # RATE LIMIT — PREVENT CALL
+                    # RATE LIMIT
                     if calls_this_minute >= rate_limit:
                         elapsed = time.time() - minute_start
                         if elapsed < 60:
@@ -63,7 +63,7 @@ def call_specific_td(path, symbols, num_calls, outputsize=5000, rate_limit=8):
                     if data.get("status") == "error":
                         msg = data.get("message", "")
                         if "run out of API credits" in msg:
-                            # HARD RATE LIMIT — sleep and retry SAME call
+                            # RATE LIMIT
                             elapsed = time.time() - minute_start
                             sleep_time = max(60 - elapsed, 1) + 2
                             print(f"Rate limit hit mid-call. Sleeping {sleep_time:.1f}s...")

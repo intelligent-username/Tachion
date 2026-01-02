@@ -6,8 +6,8 @@ Different folders are for collecting data on different things.
 
 ```
 ├── comm                # Commodities going back ~16 years
-├── crypto/             # Representative cryptocurrencies, going back ~5 years
-├── equities/           # 5 years of data on representative companies
+├── crypto/             # Major cryptos, going back ~5 years
+├── equities/           # Representative companies, ~5 years
 └── forex/              # Foreign exchange data going back ~15 years
 ```
 
@@ -24,8 +24,15 @@ This README includes the following details:
 
 - [Storage Structure](#storage)
 - [Data Collection](#data-collection)
+  - [Equities](#equities)
+  - [Crypto](#crypto)
+  - [FOREX](#forex)
+  - [Commodities](#commodities)
+  - [Rates](#rates)
 - [Feature Engineering](#feature-engineering)
-- [Data Storage](#data-storage)
+  - [Equities](#equities-1) 
+  - [For Cryptocurrencies](#for-cryptocurrencies)
+  - [For FOREX](#for-forex)
 
 
 ## Storage
@@ -68,51 +75,55 @@ For interest rates, we'll mostly be piecing together data from various sources, 
 
 We'll be training multiple different models, each to predict a different label. As a result, each asset type will expect a (slightly) different set of features.
 
-Equities and FOREX have time gaps (markets close at 4pm ET on weekdays and at 22:00 UTC Friday respectively, as well as holidays, etc.), so they require extra engineered features (day of the week, time since last  open, and so on) for the model to understand time context.
-Here’s the feature list rewritten strictly in **DeepAR terminology**, using your current setup and conventions:
+Note:
 
-The features that will be engineered for model training are as follows:
+- Equities and FOREX have time gaps (markets close at 4pm ET on weekdays and at 22:00 UTC Friday respectively, as well as holidays, etc.)
+- Commodities are open basically "26/6".
+
+So all 3 require extra engineered features (day of the week, time since last  open, and so on) for the model to understand time context.
+
+Cryptocurrencies trade 24/7, so they don't need these extra features.
+Interest rate features are a bit more discrete, so they require a different set of engineered features.
 
 ### Equities
 
-Written in DeepAR terminology:
+Written in DeepAR terminology, the following features are needed:
 
 **Item identifiers (`item_id`)**
 
-* `Ticker`
+- `Ticker`
 
 These are 'superkeys' that identify each time series (i.e., each stock).
 
 **Time features (`timestamp`)**
 
-* `Timestamp`
+- `Timestamp`
 
 This, paired with the item_id, become like keys (uniquely identify each data point).
 
 **Target (`target`)**
 
-* `log_return`
+- `log_return`
 
 This is log(today's adjusted close / yesterday's adjusted close). It's what we're trying to predict. We take the logarithm to reduce stabilize variance.
 
 **Lagged covariates (`target_lagged`)**
 
-* `log_return_{t-1}`
-* `volume_change`: log(volume_t / volume_{t-1})
-* `5_day_MA`
-* `50_day_MA`
-* `rolling_volatility_5`
-* `rolling_volatility_50`
-* `S&P_log_return_{t-1}`
-* `ΔVIX_{t-1}`
+- `log_return_{t-1}`
+- `volume_change`: log(volume_t / volume_{t-1})
+- `5_day_MA`
+- `50_day_MA`
+- `rolling_volatility_5`
+- `rolling_volatility_50`
+- `S&P_log_return_{t-1}`
+- `ΔVIX_{t-1}`
 
 **Known covariates (`dynamic_feat_known`)**
 
-* `day_of_week`: 0 = Monday, …, 6 = Sunday
-* `day_of_month`: 1–31
-* `quarter`: 1–4
-* `S&P_log_return`
-
+- `day_of_week`: 0 = Monday, …, 6 = Sunday
+- `day_of_month`: 1-31
+- `quarter`: 1-4
+- `S&P_log_return`
 
 **Reminders/Notes:**
 
@@ -121,9 +132,64 @@ This is log(today's adjusted close / yesterday's adjusted close). It's what we'r
 3. Features derived from timestamps or other “known in advance” values go under **known covariates**.
 4. Adjusted close must be used for all price-based computations.
 
-## For Cryptocurrencies
+## Cryptocurrencies
 
-Cryptocurrnecy changes will be predicted using similar features to equities, but with a few changes since they trade 24/7 and is more volatile.
+Written in DeepAR terminology.
+
+**Item identifiers (`item_id`)**
+
+**Coin / Pair**
+
+- `symbol` (e.g. BTC-USD, ETH-USD)
+
+Each coin is one time series.
+
+**Time features (`timestamp`)**
+
+- `Timestamp` (UTC, consistent granularity)
+
+Paired with `item_id` to uniquely identify observations.
+
+**Target (`target`)**
+
+- `log_return`
+
+$$
+\log\left(\frac{price_t}{price_{t-1}}\right)
+$$
+
+Crypto is highly heteroskedastic → log returns are mandatory.
+
+
+**Lagged covariates (`target_lagged`)**
+
+(derived strictly from past data)
+
+- `log_return_{t-1}`
+- `volume_change`: (\log(\text{volume}*t / \text{volume}*{t-1}))
+- `5_period_MA`
+- `20_period_MA`
+- `rolling_volatility_5`
+- `rolling_volatility_20`
+- `BTC_log_return_{t-1}`
+  (systemic market driver)
+- `ΔFunding_Rate_{t-1}` *(if derivatives data available)*
+
+**Known covariates (`dynamic_feat_known`)**
+
+- `hour_of_day` (0–23) **important for crypto**
+- `day_of_week` (0–6)
+- `day_of_month` (1–31)
+- `is_weekend`
+- `BTC_log_return` *LAGGED*
+
+Crypto trades 24/7, so there's more intra-day seasonality.
+
+**Notes / Constraints**
+
+- Again, make sure to lag everything
+- Everything is in USD
+- Don't use this to predict stablecoins
 
 ## For FOREX
 
@@ -229,12 +295,3 @@ The following features have been selected as the final 7:
 - **Point-in-Time Accuracy:** Don't forget to lag the macro features in order to prevent look-ahead bias.
 - **Look-ahead Bias:** The `Target_Class` must be shifted backward by the interval between the feature date and the subsequent FOMC meeting.
 - **Stationarity:** Log returns or first differences () should be used for non-stationary market prices to ensure the XGBoost trees split on meaningful variance.
-
-## Data Storage
-
-Each asset class (stocks, crypto, ETFs, FOREX, commodities) will have its own subfolder within this `data/` directory.
-
-Within each subfolder,
-
-- Raw data will be stored in the `raw/` directory of this folder. These are stored in JSON and come straight from the data provider API.
-- Processed datasets are stored in the `processed/` directory.

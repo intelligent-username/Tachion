@@ -16,6 +16,7 @@ from core import call_specific_td
 
 def write_data_eq(symbols):
     """
+    Writes data for equities and S&P500 index.
     Get ~15000 lines (3 API calls) worth of data for the given list of symbols and S&P500 index
     Using 30 minute intervals.
     The caller will ensure everything is written in chronological order.
