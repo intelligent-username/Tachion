@@ -6,6 +6,7 @@ import os
 import json
 import datetime
 import math
+from pathlib import Path
 from fredapi import Fred
 from dotenv import load_dotenv
 
@@ -17,9 +18,9 @@ def write_vix_delta():
     and write to data/raw/vix/VIX_Delta.json
     """
 
-    path = os.path.join("data", "raw", "vix")
-    os.makedirs(path, exist_ok=True)
-    file_path = os.path.join(path, "VIX_Delta.json")
+    path = Path(__file__).resolve().parent.parent / "raw" / "vix"
+    path.mkdir(parents=True, exist_ok=True)
+    file_path = path / "VIX_Delta.json"
 
     api_key = os.getenv("FRED_KEY")
     if not api_key:
@@ -61,7 +62,7 @@ def write_vix_delta():
         prev_value = value
 
     # Write JSON
-    with open(file_path, "w") as f:
+    with file_path.open("w") as f:
         json.dump(records, f, indent=4)
 
     print(f"Wrote {len(records)} ΔVIX records to {file_path}")

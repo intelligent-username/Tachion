@@ -7,9 +7,9 @@ All data is written into CSVs in the raw/ directory.
 """
 
 import json
-import os
 import datetime
 import time
+from pathlib import Path
 from importlib import resources
 
 from core import call_specific_td
@@ -21,14 +21,14 @@ def write_data_eq(symbols):
     The caller will ensure everything is written in chronological order.
     Writes to data/equities/raw/
     """
-    path = os.path.join("data", "equities", "raw")
-    os.makedirs(path, exist_ok=True)
+    path = Path(__file__).resolve().parent / "raw"
+    path.mkdir(parents=True, exist_ok=True)
 
     # This is for equities specifically, need ~15k
     num_calls = 3
 
-    call_specific_td(path, symbols=["SPY"], num_calls = num_calls)
-    call_specific_td(path, symbols=symbols, num_calls = num_calls)
+    call_specific_td(str(path), symbols=["SPY"], num_calls = num_calls)
+    call_specific_td(str(path), symbols=symbols, num_calls = num_calls)
 
     # note that the JSON records are written chronologically from newest to oldest
     # In the feature engineering (CSVs), remember to read backwards

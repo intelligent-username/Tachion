@@ -8,9 +8,9 @@ BTC will be used as a lagging covariate for broader market crypto conditions.
 # Careful in the model definition to not let BTC leak future information into other cryptos
 
 import json
-import os
 import datetime
 import time
+from pathlib import Path
 from importlib import resources
 
 from core import call_specific_binance
@@ -22,8 +22,8 @@ def write_data_cr(symbols):
     The caller will ensure everything is written in chronological order.
     Writes to data/crypto/raw/
     """
-    path = os.path.join("data", "crypto", "raw")
-    os.makedirs(path, exist_ok=True)
+    path = Path(__file__).resolve().parent / "raw"
+    path.mkdir(parents=True, exist_ok=True)
 
     # Binance returns max 1000 candles per call, need 87 calls for 87k
     num_calls = 87
@@ -31,7 +31,7 @@ def write_data_cr(symbols):
     # Note that the API limits are WAY higher (6000 weights per minute, aka 100 weights per second. Each call is 2 weights, so 50 calls per second)
     # So we won't HAVE TO wait at all.
 
-    call_specific_binance(path, symbols=symbols, num_calls=num_calls)
+    call_specific_binance(str(path), symbols=symbols, num_calls=num_calls)
 
     # JSON records are written chronologically (oldest to newest)
 

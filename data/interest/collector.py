@@ -18,39 +18,36 @@ Also computes:
 """
 
 import json
-import os
+from pathlib import Path
 import pandas as pd
 from core import call_specific_fred
 
 
 def collect_fred_data(series_ids):
-    path = os.path.join("data", "interest", "raw")
-    os.makedirs(path, exist_ok=True)
+    path = Path(__file__).resolve().parent / "raw"
+    path.mkdir(parents=True, exist_ok=True)
 
-    call_specific_fred(path, series_ids=series_ids)
+    call_specific_fred(str(path), series_ids=series_ids)
 
     # JSON-compatible yield spread computation
-    gs3m_file = os.path.join(path, "GS3M.json")
-    gs2_file = os.path.join(path, "GS2.json")
-    gs10_file = os.path.join(path, "GS10.json")
+    gs3m_file = path / "GS3M.json"
+    gs2_file = path / "GS2.json"
+    gs10_file = path / "GS10.json"
 
-    if all(os.path.exists(f) for f in [gs3m_file, gs2_file, gs10_file]):
-        import json
-        import pandas as pd
-
-        with open(gs3m_file, "r") as f:
+    if all(f.exists() for f in [gs3m_file, gs2_file, gs10_file]):
+        with gs3m_file.open("r") as f:
             df_3m = pd.DataFrame(json.load(f))
             df_3m['DATE'] = pd.to_datetime(df_3m['datetime'])
             df_3m.set_index('DATE', inplace=True)
             df_3m.rename(columns={'value':'GS3M'}, inplace=True)
 
-        with open(gs2_file, "r") as f:
+        with gs2_file.open("r") as f:
             df_2y = pd.DataFrame(json.load(f))
             df_2y['DATE'] = pd.to_datetime(df_2y['datetime'])
             df_2y.set_index('DATE', inplace=True)
             df_2y.rename(columns={'value':'GS2'}, inplace=True)
 
-        with open(gs10_file, "r") as f:
+        with gs10_file.open("r") as f:
             df_10y = pd.DataFrame(json.load(f))
             df_10y['DATE'] = pd.to_datetime(df_10y['datetime'])
             df_10y.set_index('DATE', inplace=True)
@@ -64,7 +61,7 @@ def collect_fred_data(series_ids):
         df['Spread_2Y_10Y'] = df['GS2'] - df['GS10']
 
         # Save computed spreads
-        df[['Spread_3M_2Y', 'Spread_2Y_10Y']].to_csv(os.path.join(path, "YieldCurveSpreads.csv"))
+        df[['Spread_3M_2Y', 'Spread_2Y_10Y']].to_csv(path / "YieldCurveSpreads.csv")
         print("Yield curve spreads computed and saved.")
 
 
@@ -76,7 +73,8 @@ def collect():
     """
     # Read FRED tickers
     fred_tickers = []
-    with open("data/interest/fred_tickers.txt", "r") as f:
+    tickers_file = Path(__file__).resolve().parent / "fred_tickers.txt"
+    with tickers_file.open("r") as f:
         for line in f:
             line = line.split("#")[0].strip()  # Strip inline comments
             if line:
