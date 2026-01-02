@@ -1,5 +1,5 @@
 """
-Unit tests for core/yfapi.py - Yahoo Finance API wrapper
+Unit tests for core/apis/yfapi.py - Yahoo Finance API wrapper
 """
 
 import pytest
@@ -9,7 +9,7 @@ import os
 import tempfile
 from unittest.mock import patch, MagicMock
 
-from core.yfapi import YFinanceAPI, call_specific_yf
+from core import YFinanceAPI, call_specific_yf
 
 
 # ============================================================================
@@ -21,7 +21,7 @@ class TestYFinanceAPI:
 
     # --- Basic Cases (4) ---
 
-    @patch('core.yfapi.yf.Ticker')
+    @patch('core.apis.yfapi.yf.Ticker')
     def test_basic_symbol_request(self, mock_ticker_class):
         """Test basic symbol request returns valid structure"""
         mock_ticker = MagicMock()
@@ -50,7 +50,7 @@ class TestYFinanceAPI:
         assert candle["close"] == 100.5
         assert candle["volume"] == 1000
 
-    @patch('core.yfapi.yf.Ticker')
+    @patch('core.apis.yfapi.yf.Ticker')
     def test_with_date_range(self, mock_ticker_class):
         """Test request with start and end dates"""
         mock_ticker = MagicMock()
@@ -72,7 +72,7 @@ class TestYFinanceAPI:
         assert call_args[1]["end"] == end_date
         assert call_args[1]["interval"] == "1d"
 
-    @patch('core.yfapi.yf.Ticker')
+    @patch('core.apis.yfapi.yf.Ticker')
     def test_custom_interval(self, mock_ticker_class):
         """Test request with custom interval"""
         mock_ticker = MagicMock()
@@ -88,7 +88,7 @@ class TestYFinanceAPI:
         call_args = mock_ticker.history.call_args
         assert call_args[1]["interval"] == "1wk"
 
-    @patch('core.yfapi.yf.Ticker')
+    @patch('core.apis.yfapi.yf.Ticker')
     def test_empty_history_returns_empty_values(self, mock_ticker_class):
         """Test that empty history returns empty values list"""
         mock_ticker = MagicMock()
@@ -105,7 +105,7 @@ class TestYFinanceAPI:
 
     # --- Edge Cases (3) ---
 
-    @patch('core.yfapi.yf.Ticker')
+    @patch('core.apis.yfapi.yf.Ticker')
     def test_api_exception_returns_error(self, mock_ticker_class):
         """Test that API exceptions return error status"""
         mock_ticker = MagicMock()
@@ -118,7 +118,7 @@ class TestYFinanceAPI:
         assert "message" in result
         assert "API Error" in result["message"]
 
-    @patch('core.yfapi.yf.Ticker')
+    @patch('core.apis.yfapi.yf.Ticker')
     def test_none_history_returns_empty(self, mock_ticker_class):
         """Test that None history returns empty values"""
         mock_ticker = MagicMock()
@@ -130,7 +130,7 @@ class TestYFinanceAPI:
         assert result["status"] == "ok"
         assert result["values"] == []
 
-    @patch('core.yfapi.yf.Ticker')
+    @patch('core.apis.yfapi.yf.Ticker')
     def test_handles_timezone_aware_datetime(self, mock_ticker_class):
         """Test handling of timezone-aware datetime"""
         mock_ticker = MagicMock()
@@ -167,7 +167,7 @@ class TestCallSpecificYF:
         with tempfile.TemporaryDirectory() as tmpdir:
             subdir = os.path.join(tmpdir, "nonexistent", "path")
 
-            with patch('core.yfapi.YFinanceAPI') as mock_api:
+            with patch('core.apis.yfapi.YFinanceAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": []}
 
                 # Should not raise even if directory doesn't exist
@@ -181,7 +181,7 @@ class TestCallSpecificYF:
                  "low": 99.0, "close": 100.5, "volume": 1000}
             ]
 
-            with patch('core.yfapi.YFinanceAPI') as mock_api:
+            with patch('core.apis.yfapi.YFinanceAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": mock_values}
 
                 call_specific_yf(tmpdir, symbols=["AAPL"])
@@ -202,7 +202,7 @@ class TestCallSpecificYF:
                  "low": 99.0, "close": 100.5, "volume": 1000}
             ]
 
-            with patch('core.yfapi.YFinanceAPI') as mock_api:
+            with patch('core.apis.yfapi.YFinanceAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": mock_values}
 
                 call_specific_yf(tmpdir, symbols=["AAPL", "GOOGL"])
@@ -213,7 +213,7 @@ class TestCallSpecificYF:
     def test_respects_rate_limit(self):
         """Test that function respects rate limit"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch('core.yfapi.YFinanceAPI') as mock_api:
+            with patch('core.apis.yfapi.YFinanceAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": []}
                 with patch('time.sleep') as mock_sleep:
                     call_specific_yf(tmpdir, symbols=["S1", "S2", "S3", "S4", "S5", "S6"], rate_limit=2)
@@ -226,7 +226,7 @@ class TestCallSpecificYF:
     def test_handles_api_error(self):
         """Test that API errors are handled gracefully"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch('core.yfapi.YFinanceAPI') as mock_api:
+            with patch('core.apis.yfapi.YFinanceAPI') as mock_api:
                 mock_api.return_value = {"status": "error", "message": "API Error"}
 
                 # Should not raise, just skip the symbol
@@ -247,7 +247,7 @@ class TestCallSpecificYF:
 
             new_values = [{"datetime": "2024-01-02", "open": 101.0, "close": 101.5, "volume": 2000}]
 
-            with patch('core.yfapi.YFinanceAPI') as mock_api:
+            with patch('core.apis.yfapi.YFinanceAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": new_values}
 
                 call_specific_yf(tmpdir, symbols=["AAPL"])
@@ -261,7 +261,7 @@ class TestCallSpecificYF:
         with tempfile.TemporaryDirectory() as tmpdir:
             mock_values = [{"datetime": "2024-01-01", "open": 100.0, "close": 100.5, "volume": 1000}]
 
-            with patch('core.yfapi.YFinanceAPI') as mock_api:
+            with patch('core.apis.yfapi.YFinanceAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": mock_values}
 
                 # Test symbols with ^ and = characters

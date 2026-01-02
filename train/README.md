@@ -1,8 +1,8 @@
 # Train
 
-This folder contains the training scripts & configs. Relies heavily on `core/`.
+This folder contains the training scripts & configs. Preconditions are assumed!
 
-We'll train an XGBoost model for predicting interest rate hikes/cuts, and DeepAR models for everything else.
+We'll train an **XGBoost** model for predicting interest rate hikes/cuts, and a **DeepAR** models for everything else.
 
 Note that the predictions for commodities won't be as strong, as they're affected by factors that aren't directly numeric, as discussed in the `data` folder [README](../data/README.md).
 

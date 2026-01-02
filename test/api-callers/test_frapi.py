@@ -1,6 +1,6 @@
 """
 Unit tests for the Federal Reserve Economic Data API wrapper and caller.
-Functions in core/frapi.py
+Functions in core/apis/frapi.py
 """
 
 import pytest
@@ -10,7 +10,7 @@ import os
 import tempfile
 from unittest.mock import patch, MagicMock
 
-from core.frapi import FredAPI, call_specific_fred
+from core import FredAPI, call_specific_fred
 
 
 # ============================================================================
@@ -22,7 +22,7 @@ class TestFredAPI:
 
     # --- Basic Cases (4) ---
 
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_basic_series_request(self, mock_fred_class):
         """Test basic FRED series request returns valid structure"""
         mock_fred = MagicMock()
@@ -46,7 +46,7 @@ class TestFredAPI:
         assert result["values"][0]["datetime"] == "2024-01-01"
         assert result["values"][0]["value"] == 5.5
 
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_with_date_range(self, mock_fred_class):
         """Test request with start and end dates"""
         mock_fred = MagicMock()
@@ -67,7 +67,7 @@ class TestFredAPI:
         assert call_args[1]["observation_start"] == start_date
         assert call_args[1]["observation_end"] == end_date
 
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_empty_series_returns_empty_values(self, mock_fred_class):
         """Test that empty series returns empty values list"""
         mock_fred = MagicMock()
@@ -82,7 +82,7 @@ class TestFredAPI:
         assert result["status"] == "ok"
         assert result["values"] == []
 
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_skips_nan_values(self, mock_fred_class):
         """Test that NaN values are skipped"""
         mock_fred = MagicMock()
@@ -106,7 +106,7 @@ class TestFredAPI:
 
     # --- Edge Cases (3) ---
 
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_api_exception_returns_error(self, mock_fred_class):
         """Test that API exceptions return error status"""
         mock_fred = MagicMock()
@@ -119,7 +119,7 @@ class TestFredAPI:
         assert "message" in result
         assert "API Error" in result["message"]
 
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_none_series_returns_empty(self, mock_fred_class):
         """Test that None series returns empty values"""
         mock_fred = MagicMock()
@@ -131,7 +131,7 @@ class TestFredAPI:
         assert result["status"] == "ok"
         assert result["values"] == []
 
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_series_with_tz_info(self, mock_fred_class):
         """Test handling of datetime with timezone info"""
         mock_fred = MagicMock()
@@ -159,7 +159,7 @@ class TestCallSpecificFred:
     # --- Basic Cases (4) ---
 
     @patch.dict(os.environ, {"FRED_KEY": "test_key"})
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_creates_output_directory(self, mock_fred_class):
         """Test that function creates output directory if needed"""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -176,7 +176,7 @@ class TestCallSpecificFred:
             call_specific_fred(subdir, series_ids=["UNRATE"])
 
     @patch.dict(os.environ, {"FRED_KEY": "test_key"})
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_writes_json_file(self, mock_fred_class):
         """Test that function writes JSON file for series"""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -199,7 +199,7 @@ class TestCallSpecificFred:
             assert data[0]["value"] == 5.5
 
     @patch.dict(os.environ, {"FRED_KEY": "test_key"})
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_handles_multiple_series(self, mock_fred_class):
         """Test that function handles multiple series IDs"""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -216,7 +216,7 @@ class TestCallSpecificFred:
             assert os.path.exists(os.path.join(tmpdir, "PCEPILFE.json"))
 
     @patch.dict(os.environ, {"FRED_KEY": "test_key"})
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_respects_rate_limit(self, mock_fred_class):
         """Test that function respects rate limit"""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -236,7 +236,7 @@ class TestCallSpecificFred:
     # --- Edge Cases (3) ---
 
     @patch.dict(os.environ, {"FRED_KEY": "test_key"})
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_missing_fred_key_raises_error(self, mock_fred_class):
         """Test that missing FRED_KEY raises ValueError"""
         with patch.dict(os.environ, {}, clear=True):
@@ -244,7 +244,7 @@ class TestCallSpecificFred:
                 call_specific_fred("/tmp", series_ids=["UNRATE"])
 
     @patch.dict(os.environ, {"FRED_KEY": "test_key"})
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_handles_api_error(self, mock_fred_class):
         """Test that API errors are handled gracefully"""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -259,7 +259,7 @@ class TestCallSpecificFred:
             assert not os.path.exists(os.path.join(tmpdir, "INVALID.json"))
 
     @patch.dict(os.environ, {"FRED_KEY": "test_key"})
-    @patch('core.frapi.Fred')
+    @patch('core.apis.frapi.Fred')
     def test_updates_existing_file(self, mock_fred_class):
         """Test updating existing file with new data"""
         with tempfile.TemporaryDirectory() as tmpdir:

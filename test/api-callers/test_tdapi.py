@@ -1,5 +1,5 @@
 """
-Unit tests for core/tdapi.py - TwelveData API wrapper
+Unit tests for core/apis/tdapi.py - TwelveData API wrapper
 """
 
 import pytest
@@ -9,7 +9,7 @@ import os
 import tempfile
 from unittest.mock import patch, MagicMock
 
-from core.tdapi import TwelveDataAPI, call_specific_td
+from core import TwelveDataAPI, call_specific_td
 
 
 # ============================================================================
@@ -21,7 +21,7 @@ class TestTwelveDataAPI:
 
     # --- Basic Cases (4) ---
 
-    @patch('core.tdapi.requests.get')
+    @patch('core.apis.tdapi.requests.get')
     def test_basic_request_structure(self, mock_get):
         """Test basic request returns valid structure"""
         mock_response = MagicMock()
@@ -36,7 +36,7 @@ class TestTwelveDataAPI:
         
         assert "status" in result or "values" in result
 
-    @patch('core.tdapi.requests.get')
+    @patch('core.apis.tdapi.requests.get')
     def test_custom_interval(self, mock_get):
         """Test request with custom interval"""
         mock_response = MagicMock()
@@ -50,7 +50,7 @@ class TestTwelveDataAPI:
         call_args = mock_get.call_args
         assert call_args[1]["params"]["interval"] == "1h"
 
-    @patch('core.tdapi.requests.get')
+    @patch('core.apis.tdapi.requests.get')
     def test_custom_outputsize(self, mock_get):
         """Test request with custom outputsize"""
         mock_response = MagicMock()
@@ -63,7 +63,7 @@ class TestTwelveDataAPI:
         call_args = mock_get.call_args
         assert call_args[1]["params"]["outputsize"] == 100
 
-    @patch('core.tdapi.requests.get')
+    @patch('core.apis.tdapi.requests.get')
     def test_date_formatting(self, mock_get):
         """Test that dates are formatted correctly"""
         mock_response = MagicMock()
@@ -92,7 +92,7 @@ class TestTwelveDataAPI:
         with pytest.raises(ValueError, match="format must be"):
             TwelveDataAPI(symbol="AAPL", format="XML")
 
-    @patch('core.tdapi.requests.get')
+    @patch('core.apis.tdapi.requests.get')
     def test_csv_format_returns_text(self, mock_get):
         """Test that CSV format returns text response"""
         mock_response = MagicMock()
@@ -120,7 +120,7 @@ class TestCallSpecificTD:
         with tempfile.TemporaryDirectory() as tmpdir:
             subdir = os.path.join(tmpdir, "new_dir")
             
-            with patch('core.tdapi.TwelveDataAPI') as mock_api:
+            with patch('core.apis.tdapi.TwelveDataAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": []}
                 
                 call_specific_td(subdir, symbols=["AAPL"], num_calls=1)
@@ -133,7 +133,7 @@ class TestCallSpecificTD:
                  "low": "99", "close": "100.5", "volume": "1000"}
             ] * 5000  # Full batch
             
-            with patch('core.tdapi.TwelveDataAPI') as mock_api:
+            with patch('core.apis.tdapi.TwelveDataAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": mock_values}
                 
                 call_specific_td(tmpdir, symbols=["TEST"], num_calls=1)
@@ -149,7 +149,7 @@ class TestCallSpecificTD:
                  "low": "99", "close": "100.5", "volume": "1000"}
             ] * 5000
             
-            with patch('core.tdapi.TwelveDataAPI') as mock_api:
+            with patch('core.apis.tdapi.TwelveDataAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": mock_values}
                 
                 call_specific_td(tmpdir, symbols=["SYM1", "SYM2"], num_calls=1)
@@ -160,7 +160,7 @@ class TestCallSpecificTD:
     def test_respects_rate_limit_parameter(self):
         """Test that rate_limit parameter is accepted"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch('core.tdapi.TwelveDataAPI') as mock_api:
+            with patch('core.apis.tdapi.TwelveDataAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": []}
                 
                 # Should not raise with custom rate_limit
@@ -171,7 +171,7 @@ class TestCallSpecificTD:
     def test_handles_api_error(self):
         """Test that function handles API errors gracefully"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch('core.tdapi.TwelveDataAPI') as mock_api:
+            with patch('core.apis.tdapi.TwelveDataAPI') as mock_api:
                 mock_api.return_value = {"status": "error", "message": "Invalid API key"}
                 
                 # Should not raise
@@ -180,7 +180,7 @@ class TestCallSpecificTD:
     def test_handles_empty_symbols_list(self):
         """Test that function handles empty symbols list"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch('core.tdapi.TwelveDataAPI') as mock_api:
+            with patch('core.apis.tdapi.TwelveDataAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": []}
                 
                 # Should not raise
@@ -195,7 +195,7 @@ class TestCallSpecificTD:
                  "low": "99", "close": "100.5", "volume": "1000"}
             ] * 100
             
-            with patch('core.tdapi.TwelveDataAPI') as mock_api:
+            with patch('core.apis.tdapi.TwelveDataAPI') as mock_api:
                 mock_api.return_value = {"status": "ok", "values": mock_values}
                 
                 call_specific_td(tmpdir, symbols=["AAPL"], num_calls=3)

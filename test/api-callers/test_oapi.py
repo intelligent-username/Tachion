@@ -1,6 +1,6 @@
 """
 Unit tests for the OANDA API wrapper
-Found in core/oaapi.py
+Found in core/apis/oaapi.py
 """
 
 import pytest
@@ -10,7 +10,7 @@ import os
 import tempfile
 from unittest.mock import patch, MagicMock
 
-from core.oaapi import OandaAPI, call_specific_oanda
+from core import OandaAPI, call_specific_oanda
 
 
 # ============================================================================
@@ -20,8 +20,8 @@ from core.oaapi import OandaAPI, call_specific_oanda
 class TestOandaAPI:
     """Tests for the OandaAPI function"""
 
-    @patch('core.oaapi.os.getenv')
-    @patch('core.oaapi.requests.get')
+    @patch('core.apis.oaapi.os.getenv')
+    @patch('core.apis.oaapi.requests.get')
     def test_basic_request_structure(self, mock_get, mock_getenv):
         """Test basic request returns valid structure"""
         mock_getenv.return_value = "fake_token"
@@ -42,8 +42,8 @@ class TestOandaAPI:
         assert "values" in result
         assert len(result["values"]) == 1
 
-    @patch('core.oaapi.os.getenv')
-    @patch('core.oaapi.requests.get')
+    @patch('core.apis.oaapi.os.getenv')
+    @patch('core.apis.oaapi.requests.get')
     def test_datetime_formatting(self, mock_get, mock_getenv):
         """Test that datetime is formatted correctly"""
         mock_getenv.return_value = "fake_token"
@@ -62,8 +62,8 @@ class TestOandaAPI:
         
         assert result["values"][0]["datetime"] == "2024-06-15 14:30:00"
 
-    @patch('core.oaapi.os.getenv')
-    @patch('core.oaapi.requests.get')
+    @patch('core.apis.oaapi.os.getenv')
+    @patch('core.apis.oaapi.requests.get')
     def test_custom_granularity(self, mock_get, mock_getenv):
         """Test request with custom granularity"""
         mock_getenv.return_value = "fake_token"
@@ -78,7 +78,7 @@ class TestOandaAPI:
         call_args = mock_get.call_args
         assert call_args[1]["params"]["granularity"] == "H1"
 
-    @patch('core.oaapi.requests.Session')
+    @patch('core.apis.oaapi.requests.Session')
     def test_uses_session_when_provided(self, mock_session_class):
         """Test that session is used when provided"""
         mock_session = MagicMock()
@@ -103,8 +103,8 @@ class TestOandaAPI:
         with pytest.raises(ValueError, match="OANDA_KEY not found"):
             OandaAPI(instrument="EUR_USD", session=None, token=None)
 
-    @patch('core.oaapi.os.getenv')
-    @patch('core.oaapi.requests.get')
+    @patch('core.apis.oaapi.os.getenv')
+    @patch('core.apis.oaapi.requests.get')
     def test_skips_incomplete_candles(self, mock_get, mock_getenv):
         """Test that incomplete candles are skipped"""
         mock_getenv.return_value = "fake_token"
@@ -134,9 +134,9 @@ class TestOandaAPI:
 class TestCallSpecificOanda:
     """Tests for the call_specific_oanda function"""
 
-    @patch('core.oaapi.os.getenv')
-    @patch('core.oaapi.OandaAPI')
-    @patch('core.oaapi.requests.Session')
+    @patch('core.apis.oaapi.os.getenv')
+    @patch('core.apis.oaapi.OandaAPI')
+    @patch('core.apis.oaapi.requests.Session')
     def test_creates_session(self, mock_session_class, mock_api, mock_getenv):
         """Test that function creates a persistent session"""
         mock_getenv.return_value = "fake_token"
@@ -147,9 +147,9 @@ class TestCallSpecificOanda:
             
         mock_session_class.assert_called_once()
 
-    @patch('core.oaapi.os.getenv')
-    @patch('core.oaapi.OandaAPI')
-    @patch('core.oaapi.requests.Session')
+    @patch('core.apis.oaapi.os.getenv')
+    @patch('core.apis.oaapi.OandaAPI')
+    @patch('core.apis.oaapi.requests.Session')
     def test_writes_json_file(self, mock_session_class, mock_api, mock_getenv):
         """Test that function writes JSON file"""
         mock_getenv.return_value = "fake_token"
@@ -164,9 +164,9 @@ class TestCallSpecificOanda:
             
             assert os.path.exists(os.path.join(tmpdir, "EUR_USD.json"))
 
-    @patch('core.oaapi.os.getenv')
-    @patch('core.oaapi.OandaAPI')
-    @patch('core.oaapi.requests.Session')
+    @patch('core.apis.oaapi.os.getenv')
+    @patch('core.apis.oaapi.OandaAPI')
+    @patch('core.apis.oaapi.requests.Session')
     def test_handles_multiple_instruments(self, mock_session_class, mock_api, mock_getenv):
         """Test that function handles multiple instruments"""
         mock_getenv.return_value = "fake_token"
@@ -182,9 +182,9 @@ class TestCallSpecificOanda:
             assert os.path.exists(os.path.join(tmpdir, "EUR_USD.json"))
             assert os.path.exists(os.path.join(tmpdir, "GBP_USD.json"))
 
-    @patch('core.oaapi.os.getenv')
-    @patch('core.oaapi.OandaAPI')
-    @patch('core.oaapi.requests.Session')
+    @patch('core.apis.oaapi.os.getenv')
+    @patch('core.apis.oaapi.OandaAPI')
+    @patch('core.apis.oaapi.requests.Session')
     def test_respects_rate_limit(self, mock_session_class, mock_api, mock_getenv):
         """Test that rate_limit parameter is accepted"""
         mock_getenv.return_value = "fake_token"
@@ -194,7 +194,7 @@ class TestCallSpecificOanda:
             # Should not raise with custom rate_limit
             call_specific_oanda(tmpdir, instruments=["EUR_USD"], num_calls=1, rate_limit=10)
 
-    @patch('core.oaapi.os.getenv')
+    @patch('core.apis.oaapi.os.getenv')
     def test_missing_token_raises_error(self, mock_getenv):
         """Test that missing OANDA_KEY raises error"""
         mock_getenv.return_value = None
@@ -203,9 +203,9 @@ class TestCallSpecificOanda:
             with pytest.raises(ValueError, match="OANDA_KEY not found"):
                 call_specific_oanda(tmpdir, instruments=["EUR_USD"], num_calls=1)
 
-    @patch('core.oaapi.os.getenv')
-    @patch('core.oaapi.OandaAPI')
-    @patch('core.oaapi.requests.Session')
+    @patch('core.apis.oaapi.os.getenv')
+    @patch('core.apis.oaapi.OandaAPI')
+    @patch('core.apis.oaapi.requests.Session')
     def test_handles_api_error(self, mock_session_class, mock_api, mock_getenv):
         """Test that function handles API errors gracefully"""
         mock_getenv.return_value = "fake_token"
@@ -215,9 +215,9 @@ class TestCallSpecificOanda:
             # Should not raise
             call_specific_oanda(tmpdir, instruments=["EUR_USD"], num_calls=1)
 
-    @patch('core.oaapi.os.getenv')
-    @patch('core.oaapi.OandaAPI')
-    @patch('core.oaapi.requests.Session')
+    @patch('core.apis.oaapi.os.getenv')
+    @patch('core.apis.oaapi.OandaAPI')
+    @patch('core.apis.oaapi.requests.Session')
     def test_deduplicates_data(self, mock_session_class, mock_api, mock_getenv):
         """Test that function removes duplicate entries"""
         mock_getenv.return_value = "fake_token"
