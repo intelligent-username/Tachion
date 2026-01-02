@@ -134,7 +134,7 @@ This is log(today's adjusted close / yesterday's adjusted close). It's what we'r
 
 ## Cryptocurrencies
 
-Written in DeepAR terminology.
+Written in DeepAR terminology:
 
 **Item identifiers (`item_id`)**
 
@@ -185,7 +185,7 @@ Crypto is highly heteroskedastic → log returns are mandatory.
 
 Crypto trades 24/7, so there's more intra-day seasonality.
 
-**Notes / Constraints**
+**Notes**
 
 - Again, make sure to lag everything
 - Everything is in USD
@@ -193,11 +193,47 @@ Crypto trades 24/7, so there's more intra-day seasonality.
 
 ## For FOREX
 
-Since currencies are very stable, it's sufficient to just use historical price data without any engineered features. The model should be able to pick up on the relevant patterns from the historical data alone. Even sudden announcements, such as the tariff changes that were made during the beginning of the new US administration, currencies drop massively for a few days and then quickly revert back to baseline. Changes in currnecy value are mostly driven by longer-term trends. Only in the case of a regime collapse, war, new currency establishment, etc. do currencies change permanently. As a result, we'll only engineer "currency_age" as a feature, which is simply how long the currency pair has been traded for.
+Since currencies are very stable, the model can learn patterns from historical data with minimal features. Currency changes are mostly driven by longer-term trends—only regime collapses, wars, or new currency establishments cause permanent shifts.
+
+**Minimal high-signal features:**
+
+| Feature | Type | Description |
+|---------|------|-------------|
+| `symbol` | item_id | Currency pair (e.g., EUR_USD) |
+| `timestamp` | time | UTC timestamp |
+| `log_return` | target | log(close_t / close_{t-1}) |
+| `log_return_lag1` | lagged | Previous period's log return |
+| `MA_50` | lagged | 50-period simple moving average |
+| `MA_200` | lagged | 200-period simple moving average |
+| `rolling_vol_50` | lagged | 50-period rolling volatility |
+| `rolling_vol_200` | lagged | 200-period rolling volatility |
+| `day_of_week` | known | 0=Monday, 6=Sunday |
+| `day_of_month` | known | 1-31 |
+| `quarter` | known | 1-4 |
+
+This set avoids short-term noise and captures: long-term trend, volatility regime, and seasonality.
 
 ## For Commodities
 
-For predicing the commodity prices, we'll be exclusively using the recent historical data of the commodity itself. Except for gradual technological and economic changes (which can be decently modelled using recent historical trends), most changes to commodity prices are a result of political factors, which are often sudden supply/demand shocks that are caused by wars, geopolitical decisions, natural disasters, etc. that are nearly impossible to account for, let alone predict.
+ForCommodity prices are largely driven by political factors—sudden supply/demand shocks from wars, geopolitical decisions, natural disasters—that are nearly impossible to predict. Gradual technological and economic changes can be modelled using long-term historical trends.
+
+**Minimal high-signal features:**
+
+| Feature | Type | Description |
+|---------|------|-------------|
+| `symbol` | item_id | Commodity (e.g., XAU_USD, WTICO_USD) |
+| `timestamp` | time | UTC timestamp |
+| `log_return` | target | log(close_t / close_{t-1}) |
+| `log_return_lag1` | lagged | Previous period's log return |
+| `MA_50` | lagged | 50-period simple moving average |
+| `MA_200` | lagged | 200-period simple moving average |
+| `rolling_vol_50` | lagged | 50-period rolling volatility |
+| `rolling_vol_200` | lagged | 200-period rolling volatility |
+| `day_of_week` | known | 0=Monday, 6=Sunday |
+| `day_of_month` | known | 1-31 |
+| `quarter` | known | 1-4 |
+
+This minimal set gives DeepAR meaningful signals beyond raw price while keeping processing fast.
 
 ## Interest Rates
 

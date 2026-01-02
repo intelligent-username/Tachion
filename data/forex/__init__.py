@@ -1,1 +1,0 @@
-# Package up FOREX collector
