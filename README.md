@@ -172,30 +172,48 @@ Tachion/
 │   ├── README.md
 │   └── predict.py
 |
-├── core/                   # Reusable endpoints
+├── core/                   # Reusable utilities
 │   ├── __init__.py
 │   ├── README.md
-│   ├── tdapi.py            # TwelveData API wrapper
-│   ├── biapi.py            # Binance API wrapper
-│   ├── oaapi.py            # OANDA API 
-│   ├── frapi.py            # FRED API wrapper
-│   └── yfapi.py            # yfinance API wrapper
+│   ├── apis/               # API wrappers
+│   │   ├── biapi.py        # Binance API (crypto)
+│   │   ├── frapi.py        # FRED API (interest rates)
+│   │   ├── oaapi.py        # OANDA API (forex, commodities)
+│   │   ├── tdapi.py        # TwelveData API (equities)
+│   │   └── yfapi.py        # yfinance API (equities inference)
+│   └── processor/          # Data processing utilities
+│       ├── lr.py           # Log returns, volume change
+│       ├── ma.py           # Moving average
+│       ├── rv.py           # Rolling volatility
+│       └── dw.py           # Date features
 |
 ├── data/                   # Data collection and preparation
-│   ├── __init__.py
 │   ├── README.md
+│   ├── comm/               # Commodities (gold, silver, oil)
+│   │   ├── comms.txt
+│   │   ├── collector.py
+│   │   ├── formatter.py
+│   │   └── raw/
 │   ├── crypto/
 │   │   ├── coins.txt
 │   │   ├── collector.py
-│   │   └── raw/            # Collected crypto JSON files
+│   │   ├── formatter.py
+│   │   └── raw/
 │   ├── equities/
 │   │   ├── companies.txt
 │   │   ├── collector.py
-│   │   └── raw/            # Collected equity JSON files
-│   └── forex/
-│       ├── currencies.txt
+│   │   ├── formatter.py
+│   │   ├── vix.py
+│   │   └── raw/
+│   ├── forex/
+│   │   ├── currencies.txt
+│   │   ├── collector.py
+│   │   ├── formatter.py
+│   │   └── raw/
+│   └── interest/
+│       ├── fred_tickers.txt
 │       ├── collector.py
-│       └── raw/            # Collected forex JSON files
+│       └── raw/
 |
 ├── frontend/
 │   ├── README.md

@@ -13,5 +13,5 @@ from apis.yfapi import YFinanceAPI, call_specific_yf
 from processor.lr import log_return, volume_change
 from processor.ma import moving_average
 from processor.rv import rolling_volatility
-from processor.dw import add_date_features
+from processor.dw import add_date_features, add_crypto_date_features
 

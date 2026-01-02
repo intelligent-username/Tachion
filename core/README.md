@@ -3,6 +3,7 @@
 The `Core` module is for any code that is repeated. It contains utilities for:
 
 - API calls
+- Data processing 
 - Splitting into features/label
 - Initiating constants
 - Configuring the model (defining its architecture fully)
@@ -13,17 +14,17 @@ The `Core` module is for any code that is repeated. It contains utilities for:
 
 ```
 apis/              # Wrappers for API calls
-├──biapi.py        # To Binance.
-├──frapi.py        # To FRED
-├──oaapi.py        # To OANDA.
-├──tdapi.py        # To TwelveData.
-└──yfapi.py        # To the yfinance API.
+├── biapi.py       # Binance API (crypto)
+├── frapi.py       # FRED API (interest rates)
+├── oaapi.py       # OANDA API (forex, commodities)
+├── tdapi.py       # TwelveData API (equities)
+└── yfapi.py       # yfinance API (equities inference)
 ```
 
 ```
-processors/        # Repeatable math for preprocessing
-├──ma.py           # Moving Average finder
-├──rv.py           # Rolling Volatility calculator           
-├──lr.py           # Log Returns calculator
-└──dw.py           # Date writer (known covariates)
+processor/         # Reusable math for preprocessing
+├── dw.py          # Date features
+├── lr.py          # Log returns, volume change
+├── ma.py          # Moving average calculator
+└── rv.py          # Rolling volatility calculator
 ```
