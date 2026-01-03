@@ -8,16 +8,24 @@ I will try to restrict this folder to only the following files:
 - `styles.css`: for the main styles
 - `main.js`: wires all of the front end logic together (import, bootstrap, initial state)
 
-- `js/`: "Logical" operations
-  - `api.js`: calls the API, retrieves formatted data
-  - `ui.js`: DOM mutations
-  - `events.js`: DOM listeners
-  - `visualizer.js`: takes in properly formatted data and prepares for graphing (scale, etc.)
-  - `state.js`: holds the current in-memory data (for other components to reference/update); a centralized source
+"Logical" operations:
 
-- `components/`: visual components
-  - `sidebar.js`: sidebar, contains search feature, settings, & details
-  - `header.js`: just show the app name, logo, current, date
-  - `footer.js`: footer with links to GitHub, documentation, etc.
-  - `graph.js`: takes in prepared data (from `visualizer.js`) renders using D3. <!-- Nothing else!! -->
+```
+js/
+  api.js:         # calls the API, retrieves formatted data
+  ui.js:          # DOM mutations
+  events.js:      # DOM listeners
+  visualizer.js:  # preps data for graphing
+  state.js:       # holds in-memory data for other sources
+```
 
+
+Visual components:
+
+```
+components/
+  sidebar.js:     # sidebar: search feature, settings, details
+  header.js:      # header: app name, logo, current date
+  footer.js:      # footer: links to GitHub, documentation, etc.
+  graph.js:       # prepared data from visualizer.js -> plots
+```

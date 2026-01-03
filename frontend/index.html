@@ -7,37 +7,17 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <h1>Tachion</h1>
-  </header>
-
+  <header id="header"></header>
   <main>
-    <section id="inputs">
-      <div class="input-group">
-        <label for="ticker-input">Enter Ticker (Stock/Crypto/Asset):</label>
-        <input type="text" id="ticker-input" placeholder="e.g. AAPL, BTC-USD">
-        <button id="fetch-button">Fetch Data</button>
-      </div>
-
-      <div class="input-group">
-        <label for="csv-input">Or upload CSV:</label>
-        <input type="file" id="csv-input" accept=".csv">
-        <button id="upload-button">Use CSV</button>
-      </div>
-    </section>
-
+    <aside id="sidebar"></aside>
+    <section id="inputs"></section>
     <section id="visualization">
       <canvas id="price-chart"></canvas>
     </section>
-
-    <aside id="side-panel">
-      <h2>Prediction Info</h2>
-      <p id="prediction-text">Prediction will appear here.</p>
-      <p id="confidence-text"></p>
-    </aside>
   </main>
+  <footer id="footer"></footer>
 
-  <script src="main.js"></script>
-  <script src="visualizer.js"></script>
+  <!-- Main entry point loads all modules dynamically -->
+  <script type="module" src="main.js"></script>
 </body>
 </html>
