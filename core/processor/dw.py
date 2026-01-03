@@ -1,4 +1,7 @@
-"""Given a dataframe for a company, write the dates in a clear, standardized way that DeepAR can use"""
+"""
+Date Writer
+Given a dataframe for a company, write the dates in a clear, standardized way that DeepAR can use
+"""
 
 import pandas as pd
 

@@ -23,6 +23,9 @@ Crypto trades 24/7, so intra-day seasonality is captured via hour_of_day.
 
 import pandas as pd
 import numpy as np
+import sys
+
+from core.processor.pw import ProgressWriter
 
 from importlib import resources
 from pathlib import Path
@@ -41,7 +44,7 @@ def load_coin(symbol, package):
     Loads in all raw JSON data for a given coin.
     Returns a DataFrame with datetime parsed.
     """
-    raw_path = resources.files(package).joinpath('raw', f'{symbol}.json')
+    raw_path = resources.files(package) / 'raw' / f'{symbol}.json'
     df = pd.read_json(raw_path)
     df['datetime'] = pd.to_datetime(df['datetime'])
     df = df.sort_values('datetime').reset_index(drop=True)
@@ -107,8 +110,23 @@ def process_all_data(symbols, package):
     """
     Process all coins' data and write to a single parquet file, ordered by timestamp.
     """
+    total = len(symbols)
+    if total == 0:
+        print("No symbols provided; nothing to process.")
+        return
+
+    def _render_progress(done: int) -> None:
+        bar_width = 30
+        filled = int(bar_width * done / total)
+        green = "\033[92m"
+        reset = "\033[0m"
+        bar = f"{green}{'=' * filled}{reset}{' ' * (bar_width - filled)}"
+        sys.stdout.write(f"\rProcessed [{bar}] {done}/{total}")
+        sys.stdout.flush()
+        if done == total:
+            sys.stdout.write("\n")
     # Load BTC data as the market driver
-    btc_path = resources.files(package).joinpath('raw', 'BTC.json')
+    btc_path = resources.files(package) / 'raw' / 'BTC.json'
     btc_df = pd.read_json(btc_path)
     btc_df['datetime'] = pd.to_datetime(btc_df['datetime'])
     btc_df = btc_df.sort_values('datetime').reset_index(drop=True)
@@ -116,20 +134,21 @@ def process_all_data(symbols, package):
 
     # Process each symbol
     all_dfs = []
-    for symbol in symbols:
+    for idx, symbol in enumerate(symbols, 1):
         try:
             df = process_coin_data(symbol, package, btc_df)
             all_dfs.append(df)
-            print(f"Processed {symbol}")
+            ProgressWriter(idx, total)
         except Exception as e:
-            print(f"Error processing {symbol}: {e}")
+            sys.stdout.write(f"\nError processing {symbol}: {e}\n")
+            ProgressWriter(idx, total)
 
     # Aggregate and order by timestamp
     combined = pd.concat(all_dfs, ignore_index=True)
     combined = combined.sort_values(by=['timestamp', 'symbol']).reset_index(drop=True)
 
     # Write to processed/ folder
-    out_path = Path(resources.files(package).joinpath('processed', 'crypto_processed.parquet'))
+    out_path = Path(resources.files(package) / 'processed' / 'crypto_processed.parquet')
     out_path.parent.mkdir(parents=True, exist_ok=True)
     combined.to_parquet(out_path, index=False)
     print(f"Wrote {len(combined)} rows to {out_path}")

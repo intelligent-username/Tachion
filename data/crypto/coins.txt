@@ -29,7 +29,6 @@ UNI
 AAVE
 MKR
 ONDO
-HYPE
 
 # High-Volatility / Speculative (Purely sentiment-driven)
 DOGE

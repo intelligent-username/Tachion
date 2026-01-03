@@ -11,13 +11,15 @@ __pycache__/
 *.ipynb_checkpoints*
 .vscode/
 
-# Reminders, formulas, etc. for my own use, might publish later but not necessary for the project to run.
-notes/ 
+# Reminders, formulas, tests
+notes/
+test.py
 
-# Data files (might push to Kaggle or something else, but the folders are quite large)
+# Data files (might push to Kaggle later, but some are too large for GitHub)
+*.json
+*.parquet
 
 # Raw files which are csv are downloaded by hand so they don't have a script
-*.json
 
-
+# Directory metadata
 *.egg-info

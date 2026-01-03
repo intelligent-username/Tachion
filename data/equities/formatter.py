@@ -27,6 +27,9 @@ Once processed, we'll write parquet files to the processed/ folder, which will c
 
 import pandas as pd
 import numpy as np
+import sys
+
+from core.processor.pw import ProgressWriter
 
 from importlib import resources
 from pathlib import Path
@@ -46,7 +49,7 @@ def load_company(symbol, package):
     Returns a DataFrame with datetime parsed.
     """
 
-    raw_path = resources.files(package).joinpath('raw', f'{symbol}.json')
+    raw_path = resources.files(package) / 'raw' / f'{symbol}.json'
     df = pd.read_json(raw_path)
     df['datetime'] = pd.to_datetime(df['datetime'])
     df = df.sort_values('datetime').reset_index(drop=True)
@@ -59,6 +62,9 @@ def process_company_data(symbol, package, sp500_df, vix_delta_df):
     Returns a DataFrame with: ticker, timestamp, target, lagged covariates, known covariates.
     """
     df = load_company(symbol, package)
+
+    # Replace zero volumes with last known non-zero to avoid log(0) explosions
+    df['volume'] = df['volume'].replace(0, np.nan).ffill()
 
     # --- Target: log_return ---
     df['log_return'] = log_return(df['close'])
@@ -118,37 +124,49 @@ def process_all_data(symbols, package):
     """
     Process all companies' data and write to a single parquet file, ordered by date.
     """
+    total = len(symbols)
+    if total == 0:
+        print("No symbols provided; nothing to process.")
+        return
+
     # Load S&P500 data
-    sp500_path = resources.files(package).joinpath('raw', 'SPY.json')
+    sp500_path = resources.files(package) / 'raw' / 'SPY.json'
     sp500_df = pd.read_json(sp500_path)
     sp500_df['datetime'] = pd.to_datetime(sp500_df['datetime'])
     sp500_df = sp500_df.sort_values('datetime').reset_index(drop=True)
     sp500_df['sp_log_return'] = log_return(sp500_df['close'])
 
     # Load VIX delta data
-    vix_delta_path = resources.files(package).joinpath('raw', 'vix', 'VIX_Delta.json')
+    vix_delta_path = resources.files(package) / 'raw' / 'vix' / 'VIX_Delta.json'
     vix_delta_df = pd.read_json(vix_delta_path)
     vix_delta_df['date'] = pd.to_datetime(vix_delta_df['date'])
 
     all_dfs = []
-    for symbol in symbols:
+    for idx, symbol in enumerate(symbols, 1):
         try:
             df = process_company_data(symbol, package, sp500_df, vix_delta_df)
             all_dfs.append(df)
-            print(f"Processed {symbol}")
+            ProgressWriter(idx, total)
         except Exception as e:
-            print(f"Error processing {symbol}: {e}")
+            # Print the error on its own line, then redraw progress
+            sys.stdout.write(f"\nError processing {symbol}: {e}\n")
+            ProgressWriter(idx, total)
 
     # Aggregate and order by timestamp
     combined = pd.concat(all_dfs, ignore_index=True)
     combined = combined.sort_values(by=['timestamp', 'ticker']).reset_index(drop=True)
 
     # Write to the processed/ folder
-    out_path = Path(resources.files(package).joinpath('processed', 'equities_processed.parquet'))
+    out_path = Path(resources.files(package) / 'processed' / 'equities_processed.parquet')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    combined.to_parquet(out_path, index=False)
-    print(f"Wrote {len(combined)} rows to {out_path}")
+
+    combined.to_parquet(
+                        out_path,
+                        index=False,
+                        engine='pyarrow',
+                        compression='zstd')
     
+    print(f"Wrote {len(combined)} rows to {out_path}")
 
 
 if __name__ == "__main__":
