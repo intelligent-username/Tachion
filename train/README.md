@@ -11,8 +11,8 @@ Note that the predictions for commodities won't be as strong, as they're affecte
 This folder contains the following important files:
 
 ```
-├── Deep.py           # DeepAR model definition
-├── XGBoost.py        # XGBoost model definition
+├── deep.py           # DeepAR model definition
+├── xg.py             # XGBoost model definition
 ├── train_deepar.py   # Script for training DeepAR models
 └── train_xgboost.py  # Script for training XGBoost models
 ```

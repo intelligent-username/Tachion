@@ -26,6 +26,6 @@ processor/         # Reusable math for preprocessing
 ├── dw.py          # Date features
 ├── lr.py          # Log returns, volume change
 ├── ma.py          # Moving average calculator
-├── pw.py          # Progress writer for printing completion ratio
+├── pw.py          # Progress Writer: prints ratio
 └── rv.py          # Rolling volatility calculator
 ```
