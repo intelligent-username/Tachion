@@ -166,33 +166,79 @@ Tachion/
 ├── README.md
 ├── requirements.txt
 ├── pyproject.toml
-├── .env                    # Make this & put your API keys here
-├── api/                    # FastAPI backend
-│
-├── core/
+├── .env                    # API keys (not committed but necessary to run project locally)
+├── api/                    # Proprietary FastAPI backend
+│   ├── __init__.py
+│   ├── README.md
+│   └── predict.py
+|
+├── core/                   # Reusable utilities
+│   ├── __init__.py
 │   ├── README.md
 │   ├── apis/               # API wrappers
-│   │   ├── biapi.py        # For the Binance API
-│   │   ├── frapi.py        # FRED API
-│   │   ├── oaapi.py        # OANDA API
-│   │   ├── tdapi.py        # TwelveData API
-│   │   └── yfapi.py        # yfinance API (Yahoo Finance)
+│   │   ├── biapi.py        # Binance API (crypto)
+│   │   ├── frapi.py        # FRED API (interest rates)
+│   │   ├── oaapi.py        # OANDA API (forex, commodities)
+│   │   ├── tdapi.py        # TwelveData API (equities)
+│   │   └── yfapi.py        # yfinance API (equities inference)
 │   └── processor/          # Data processing utilities
+│       ├── lr.py           # Log returns, volume change
+│       ├── ma.py           # Moving average
+│       ├── rv.py           # Rolling volatility
+│       └── dw.py           # Date features
 |
-├── data/                   # Data collection & engineer
+├── data/                   # Data collection and preparation
+│   ├── README.md
 │   ├── comm/               # Commodities (gold, silver, oil)
+│   │   ├── comms.txt
+│   │   ├── collector.py
+│   │   ├── formatter.py
+│   │   └── raw/
 │   ├── crypto/
+│   │   ├── coins.txt
+│   │   ├── collector.py
+│   │   ├── formatter.py
+│   │   └── raw/
 │   ├── equities/
-│   ├── forex/              # Currencies
-│   └── interest/           # Interest rate iddicators
+│   │   ├── companies.txt
+│   │   ├── collector.py
+│   │   ├── formatter.py
+│   │   ├── vix.py
+│   │   └── raw/
+│   ├── forex/
+│   │   ├── currencies.txt
+│   │   ├── collector.py
+│   │   ├── formatter.py
+│   │   └── raw/
+│   └── interest/
+│       ├── fred_tickers.txt
+│       ├── collector.py
+│       └── raw/
 |
 ├── frontend/
-│   ├── components/         # UI: footer, graphing, etc.
-│   └── js/                 # Actual JS logic
+│   ├── README.md
+│   ├── index.html
+│   ├── styles.css
+│   ├── main.js
+│   ├── components/
+│   │   ├── footer.js
+│   │   ├── graph.js
+│   │   ├── header.js
+│   │   └── sidebar.js
+│   └── js/
+│       ├── api.js
+│       ├── events.js
+│       ├── state.js
+│       ├── ui.js
+│       └── visualizer.js
+|
+├── imgs/
+├── models/             # Pre-trained models
+│   └── README.md
+├── test/               # Lots of tests
 │
-├── test/                   # Testing utils (core)
-│
-└── train/                  # Model definitions & training loop
+└── train/              # Model definitions & training loop
+    └── README.md
 ```
 
 ## Attributions

@@ -197,19 +197,19 @@ Since currencies are very stable, the model can learn patterns from historical d
 
 **Minimal high-signal features:**
 
-| Feature | Type | Description |
-|---------|------|-------------|
-| `symbol` | item_id | Currency pair (e.g., EUR_USD) |
-| `timestamp` | time | UTC timestamp |
-| `log_return` | target | log(close_t / close_{t-1}) |
-| `log_return_lag1` | lagged | Previous period's log return |
-| `MA_50` | lagged | 50-period simple moving average |
-| `MA_200` | lagged | 200-period simple moving average |
-| `rolling_vol_50` | lagged | 50-period rolling volatility |
-| `rolling_vol_200` | lagged | 200-period rolling volatility |
-| `day_of_week` | known | 0=Monday, 6=Sunday |
-| `day_of_month` | known | 1-31 |
-| `quarter` | known | 1-4 |
+| Feature           | Type    | Description                      |
+|-------------------|---------|----------------------------------|
+| `symbol`          | item_id | Currency pair (e.g., EUR_USD)    |
+| `timestamp`       | time    | UTC timestamp                    |
+| `log_return`      | target  | log(close_t / close_{t-1})       |
+| `log_return_lag1` | lagged  | Previous period's log return     |
+| `MA_50`           | lagged  | 50-period simple moving average  |
+| `MA_200`          | lagged  | 200-period simple moving average |
+| `rolling_vol_50`  | lagged  | 50-period rolling volatility     |
+| `rolling_vol_200` | lagged  | 200-period rolling volatility    |
+| `day_of_week`     | known   | 0=Monday, 6=Sunday               |
+| `day_of_month`    | known   | 1-31                             |
+| `quarter`         | known   | 1-4                              |
 
 This set avoids short-term noise and captures: long-term trend, volatility regime, and seasonality.
 
@@ -219,19 +219,19 @@ ForCommodity prices are largely driven by political factors—sudden supply/dema
 
 **Minimal high-signal features:**
 
-| Feature | Type | Description |
-|---------|------|-------------|
-| `symbol` | item_id | Commodity (e.g., XAU_USD, WTICO_USD) |
-| `timestamp` | time | UTC timestamp |
-| `log_return` | target | log(close_t / close_{t-1}) |
-| `log_return_lag1` | lagged | Previous period's log return |
-| `MA_50` | lagged | 50-period simple moving average |
-| `MA_200` | lagged | 200-period simple moving average |
-| `rolling_vol_50` | lagged | 50-period rolling volatility |
-| `rolling_vol_200` | lagged | 200-period rolling volatility |
-| `day_of_week` | known | 0=Monday, 6=Sunday |
-| `day_of_month` | known | 1-31 |
-| `quarter` | known | 1-4 |
+| Feature            | Type    | Description                      |
+|--------------------|---------|----------------------------------|
+| `symbol`           | item_id | Commodity (e.g., XAU_USD)        |
+| `timestamp`        | time    | UTC timestamp                    |
+| `log_return`       | target  | log(close_t / close_{t-1})       |
+| `log_return_lag1`  | lagged  | Previous period's log return     |
+| `MA_50`            | lagged  | 50-period simple moving average  |
+| `MA_200`           | lagged  | 200-period simple moving average |
+| `rolling_vol_50`   | lagged  | 50-period rolling volatility     |
+| `rolling_vol_200`  | lagged  | 200-period rolling volatility    |
+| `day_of_week`      | known   | 0=Monday, 6=Sunday               |
+| `day_of_month`     | known   | 1-31                             |
+| `quarter`          | known   | 1-4                              |
 
 This minimal set gives DeepAR meaningful signals beyond raw price while keeping processing fast.
 
