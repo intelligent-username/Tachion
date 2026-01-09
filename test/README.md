@@ -4,7 +4,7 @@ Unit tests for all scripts. Expands as needed.
 
 ## Structure
 
-```
+```md
 test/
 ├── api-callers/         # API wrapper tests
 ├── collectors/          # The API callers to get raw data

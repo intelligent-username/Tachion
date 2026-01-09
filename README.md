@@ -9,13 +9,11 @@
 
 1. [Features](#features)  
 2. [Installation](#installation)  
-   - [Using Conda](#using-conda)  
-   - [Using Python / pip](#using-python--pip)  
 3. [Environment Setup](#environment-setup)
 4. [Data Collection](#data-collection)
 5. [Usage](#usage)  
 6. [File Structure](#file-structure)
-7. [Data Sources](#data-sources)
+7. [Attributions](#attributions)
 8. [Contributing](#contributing)  
 9. [License](#license)  
 
@@ -59,7 +57,7 @@ XGBoost (Extreme Gradient Boosting) is a highly efficient gradient boosting fram
 
 ## Usage
 
-The chief way to use Tachion is to go to [tachion.varak.dev](https://tachion.varak.dev) and use the hosted version. 
+The chief way to use Tachion is to go to [tachion.varak.dev](https://tachion.varak.dev) and use the hosted version.
 
 However, if you want to run it locally, follow the instructions below.
 
@@ -139,28 +137,29 @@ To run the test suite, navigate to the project root and execute:
 pytest
 ```
 
-### Usage
+#### Backend
 
-1. Collect historical data using the collectors above.
-2. Start the backend server:
+To run the backend, execute:
 
 ```bash
 uvicorn api.predict:app --reload
 ```
 
-3. Send a POST request to `/predict` with your data and desired horizon.
+3.Send a POST request to `/predict` with your data and desired horizon.
 
-4. Visualize predictions and prediction intervals through the integrated frontend.
+4.Visualize predictions and prediction intervals through the integrated frontend.
 
 If tweaking any of the internals of the project, make sure to first read the provided `.md` (markdown) files in the folder you're working in to understand the corresponding specifications.
 
 For a better understanding of how the project is structured, have a look at the file structure below.
 
+Once the frontend is finalized, instructions for the frontend will be added as well
+
 ## File Structure
 
 Below are some of the important files and folders in this project:
 
-```
+```md
 Tachion/
 ├── LICENSE
 ├── README.md
@@ -209,9 +208,9 @@ Tachion uses the APIs from the following for market data:
 
 Other sources:
 
-- Cleveland NowCast for real interest rates and CPI consensus: 
-    - [Cleveland Fed NowCast](https://www.clevelandfed.org/indicators-and-data/inflation-expectations)
-    - [Original Excel File](https://www.clevelandfed.org/-/media/files/webcharts/inflationexpectations/inflation-expectations.xlsx?sc_lang=en&hash=C27818913D96CEDD80E3136B9946CFA7)
+- Cleveland NowCast for real interest rates and CPI consensus:
+  - [Cleveland Fed NowCast](https://www.clevelandfed.org/indicators-and-data/inflation-expectations)
+  - [Original Excel File](https://www.clevelandfed.org/-/media/files/webcharts/inflationexpectations/inflation-expectations.xlsx?sc_lang=en&hash=C27818913D96CEDD80E3136B9946CFA7)
 
 ## Contributing
 

@@ -10,7 +10,7 @@ I will try to restrict this folder to only the following files:
 
 "Logical" operations:
 
-```
+```nd
 js/
   api.js:         # calls the API, retrieves formatted data
   ui.js:          # DOM mutations
@@ -19,10 +19,9 @@ js/
   state.js:       # holds in-memory data for other sources
 ```
 
-
 Visual components:
 
-```
+```md
 components/
   sidebar.js:     # sidebar: search feature, settings, details
   header.js:      # header: app name, logo, current date

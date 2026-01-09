@@ -32,6 +32,6 @@ numpy==1.26.4
 # Misc
 python-dotenv==1.0.0
 
-# To run .ipynb files (project doesn't need this but I do)
+# For running Jupyter notebooks (.ipynb, which are ignored in pushes) files (project doesn't need this but I do)
 ipykernel==6.31.0
 notebook==7.1.0

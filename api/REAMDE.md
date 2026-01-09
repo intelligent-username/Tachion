@@ -7,6 +7,7 @@ This folder contains utilities for Tachion's PROPRIETARY API. It's all about the
 ### Predictions
 
 POST /api/predict
+
 ```json
 {
     "asset": "AAPL",
@@ -16,6 +17,7 @@ POST /api/predict
 ```
 
 Response:
+
 ```json
 {
     // These are the predictions

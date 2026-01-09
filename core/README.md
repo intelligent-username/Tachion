@@ -3,7 +3,7 @@
 The `Core` module is for any code that is repeated. It contains utilities for:
 
 - API calls
-- Data processing 
+- Data processing
 - Splitting into features/label
 - Initiating constants
 - Configuring the model (defining its architecture fully)
@@ -12,7 +12,7 @@ The `Core` module is for any code that is repeated. It contains utilities for:
 
 ## Files
 
-```
+```md
 apis/              # Wrappers for API calls
 ├── biapi.py       # Binance API (crypto)
 ├── frapi.py       # FRED API (interest rates)
@@ -21,7 +21,7 @@ apis/              # Wrappers for API calls
 └── yfapi.py       # yfinance API (equities inference)
 ```
 
-```
+```md
 processor/         # Reusable math for preprocessing
 ├── dw.py          # Date features
 ├── lr.py          # Log returns, volume change

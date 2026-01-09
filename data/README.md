@@ -2,9 +2,9 @@
 
 File Structure
 
-Different folders are for collecting data on different things. 
+Different folders are for collecting data on different things.
 
-```
+```md
 ├── comm                # Commodities going back ~16 years
 ├── crypto/             # Major cryptos, going back ~5 years
 ├── equities/           # Representative companies, ~5 years
@@ -30,10 +30,11 @@ This README includes the following details:
   - [Commodities](#commodities)
   - [Rates](#rates)
 - [Feature Engineering](#feature-engineering)
-  - [Equities](#equities-1) 
-  - [For Cryptocurrencies](#for-cryptocurrencies)
-  - [For FOREX](#for-forex)
-
+  - [Equity Features](#equity-features)
+  - [Cryptocurrency Features](#cryptocurrency-features)
+  - [FOREX Features](#forex-features)
+  - [Commodity Features](#commodity-features)
+  - [Interest Rate Features](#interest-rate-features)
 
 ## Storage
 
@@ -85,9 +86,9 @@ So all 3 require extra engineered features (day of the week, time since last  op
 Cryptocurrencies trade 24/7, so they don't need these extra features.
 Interest rate features are a bit more discrete, so they require a different set of engineered features.
 
-### Equities
+### Equity Features
 
-Written in DeepAR terminology, the following features are needed:
+The following features are needed:
 
 **Item identifiers (`item_id`)**
 
@@ -131,13 +132,11 @@ This is log(today's adjusted close / yesterday's adjusted close). It's what we'r
 2. Adjusted close must be used for all price-based computations.
 3. Remember to drop the NaN rows (i.e. missing 50-day MA and so on)
 
-### Cryptocurrencies
-
-Written in DeepAR terminology:
+### Cryptocurrency Features
 
 **Item identifiers (`item_id`)**
 
-**Coin / Pair**
+**Coin / Pair:**
 
 - `symbol` (e.g. BTC-USD, ETH-USD)
 
@@ -181,17 +180,17 @@ Crypto is very heteroskedastic so log returns are mandatory.
 
 Crypto trades 24/7, so there's more intra-day seasonality.
 
-**Notes**
+**Notes:**
 
 - Again, make sure to lag correctly
 - Everything is in USD
 - Don't use this to predict stablecoins
 
-### FOREX
+### FOREX Features
 
 Since currencies are very stable, the model can learn patterns from historical data with minimal features. Currency changes are mostly driven by longer-term trends; only regime collapses, wars, or new currency establishments cause permanent shifts, which can't really be predicted by a model of this sort anyway.
 
-**Features**
+Features
 
 | Feature           | Type    | Description                      |
 |-------------------|---------|----------------------------------|
@@ -209,11 +208,11 @@ Since currencies are very stable, the model can learn patterns from historical d
 
 This set avoids short-term noise and captures: long-term trend, volatility regime, and seasonality.
 
-### Commodities
+### Commodity Features
 
-Commodity prices are largely stable and affected by technological improvements and historical trends over time. Often, their movement is driven by external factors (geopolitical shifts, natural disasters, supply/demand shocks) that are nearly impossible to predict. 
+Commodity prices are largely stable and affected by technological improvements and historical trends over time. Often, their movement is driven by external factors (geopolitical shifts, natural disasters, supply/demand shocks) that are nearly impossible to predict.
 
-**Features**
+Features
 
 | Feature            | Type    | Description                      |
 |--------------------|---------|----------------------------------|
@@ -229,8 +228,7 @@ Commodity prices are largely stable and affected by technological improvements a
 | `day_of_month`     | known   | 1-31                             |
 | `quarter`          | known   | 1-4                              |
 
-
-### Interest Rates
+### Interest Rate Features
 
 This is the difficult one
 
@@ -272,13 +270,14 @@ Inflation and employment. These capture the core drivers of monetary policy: Inf
 - `Core_PCE_3M_Ann`: 3-month annualized Core PCE (for recent trends).
 - `CPI_Surprise`: Difference between actual CPI and consensus forecast.
 
-**Labour Market**
+**Labour Market:**
 
 - `Unemployment_Gap`: Current Unemployment minus NAIRU (Natural Rate).
 - `NonFarm_Payrolls_Delta`: Month-over-month change in jobs.
 - `Wage_Growth_YoY`: Average hourly earnings (signals cost-push inflation).
 
-**Economic Activity**
+**Economic Activity:**
+
 - `GDP_Nowcast`: Real-time GDP estimates (e.g., Atlanta Fed's GDPNow).
 - `ISM_Manufacturing_PMI`: A leading indicator of industrial health.
 
@@ -286,12 +285,12 @@ Inflation and employment. These capture the core drivers of monetary policy: Inf
 
 The market usually prices in the move before it happens. XGBoost will rely heavily on these.
 
-**Fed Funds Futures:** 
+**Fed Funds Futures:**
 
 - `Implied_Rate_Next_Meeting`: Implied rate from the 30-day Fed Funds Futures.
 - `Rate_Probability_Delta`: Daily change in the CME FedWatch probabilities for a hike vs. cut.
 
-**Yield Curve Dynamics**
+**Yield Curve Dynamics:**
 
 - `2Y_10Y_Spread`: Curve inversion is a primary signal for cuts/recession.
 - `3M_10Y_Spread`: Cited by the Fed as their preferred recession indicator.
@@ -305,7 +304,6 @@ The market usually prices in the move before it happens. XGBoost will rely heavi
 - **Stablecoin Volumes**: Since cryptocurrencies don't have earnings, dividends, or intrinsic value, the volume of stablecoins (pegged to USD) shows how much "excess" liquidity is in the economy. Formula:
 
 Let $\Delta SC$ be the stable coin market cap delta, $SC_{t}$ be the current stablecoin market cap, and $SC_{t-1}$ be the previous market cap.
-
 
 $$ \Delta \text{SC} = \frac{\text{SC}_{t} - \text{SC}_{t-1}}{\text{SC}_{t-1}}$$
 
@@ -340,7 +338,7 @@ $$
 
 <!-- Note: Might have to change this due to frequency mismatch, idk yet -->
 
-**Notes**
+**Notes:**
 
 - **Point-in-Time Accuracy:** Don't forget to lag the macro features, again.
 - **Look-ahead Bias:** The `Target_Class` must be shifted backward by the interval between the feature date and the subsequent FOMC meeting.

@@ -7,16 +7,16 @@ __pycache__/
 *.pyc
 **cache**
 
-# Editor directories
+# VSCode and Jupyter waste
 *.ipynb_checkpoints*
 .vscode/
 
 # Reminders, formulas, tests
 notes/
 test.py
-test.ipynb
+*.ipynb
 
-# Data files (might push to Kaggle later, don't want LFS sync problems w/ HuggingFace later)
+# Data files (might push to Kaggle or HuggingFace datasets later)
 *.json
 *.csv
 *.parquet
