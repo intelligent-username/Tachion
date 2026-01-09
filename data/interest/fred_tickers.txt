@@ -10,6 +10,6 @@ NFCI
 DFEDTARU
 
 # 3-month, 2-year, and 10-year treasury yields respectively
-TB3MS
-DGS2
-DGS10
+GS3M
+GS2
+GS10

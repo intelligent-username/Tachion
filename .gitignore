@@ -14,9 +14,11 @@ __pycache__/
 # Reminders, formulas, tests
 notes/
 test.py
+test.ipynb
 
-# Data files (might push to Kaggle later, but some are too large for GitHub)
+# Data files (might push to Kaggle later, don't want LFS sync problems w/ HuggingFace later)
 *.json
+*.csv
 *.parquet
 
 # Raw files which are csv are downloaded by hand so they don't have a script

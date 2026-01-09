@@ -129,5 +129,3 @@ if __name__ == "__main__":
         pairs = [line.split('#')[0].strip() for line in f if line.strip() and not line.lstrip().startswith('#')]
 
     process_all_data(pairs, pkg)
-
-

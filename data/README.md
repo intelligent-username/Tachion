@@ -127,12 +127,11 @@ This is log(today's adjusted close / yesterday's adjusted close). It's what we'r
 
 **Reminders/Notes:**
 
-1. `log_return` is the **target** for DeepAR.
-2. All rolling or lagged features go under **lagged covariates**.
-3. Features derived from timestamps or other “known in advance” values go under **known covariates**.
-4. Adjusted close must be used for all price-based computations.
+1. `log_return` is the **target**.
+2. Adjusted close must be used for all price-based computations.
+3. Remember to drop the NaN rows (i.e. missing 50-day MA and so on)
 
-## Cryptocurrencies
+### Cryptocurrencies
 
 Written in DeepAR terminology:
 
@@ -154,16 +153,13 @@ Paired with `item_id` to uniquely identify observations.
 
 - `log_return`
 
-$$
+$
 \log\left(\frac{price_t}{price_{t-1}}\right)
-$$
+$
 
-Crypto is highly heteroskedastic → log returns are mandatory.
-
+Crypto is very heteroskedastic so log returns are mandatory.
 
 **Lagged covariates (`target_lagged`)**
-
-(derived strictly from past data)
 
 - `log_return_{t-1}`
 - `volume_change`: (\log(\text{volume}*t / \text{volume}*{t-1}))
@@ -187,15 +183,15 @@ Crypto trades 24/7, so there's more intra-day seasonality.
 
 **Notes**
 
-- Again, make sure to lag everything
+- Again, make sure to lag correctly
 - Everything is in USD
 - Don't use this to predict stablecoins
 
-## For FOREX
+### FOREX
 
-Since currencies are very stable, the model can learn patterns from historical data with minimal features. Currency changes are mostly driven by longer-term trends—only regime collapses, wars, or new currency establishments cause permanent shifts.
+Since currencies are very stable, the model can learn patterns from historical data with minimal features. Currency changes are mostly driven by longer-term trends; only regime collapses, wars, or new currency establishments cause permanent shifts, which can't really be predicted by a model of this sort anyway.
 
-**Minimal high-signal features:**
+**Features**
 
 | Feature           | Type    | Description                      |
 |-------------------|---------|----------------------------------|
@@ -213,11 +209,11 @@ Since currencies are very stable, the model can learn patterns from historical d
 
 This set avoids short-term noise and captures: long-term trend, volatility regime, and seasonality.
 
-## For Commodities
+### Commodities
 
-ForCommodity prices are largely driven by political factors—sudden supply/demand shocks from wars, geopolitical decisions, natural disasters—that are nearly impossible to predict. Gradual technological and economic changes can be modelled using long-term historical trends.
+Commodity prices are largely stable and affected by technological improvements and historical trends over time. Often, their movement is driven by external factors (geopolitical shifts, natural disasters, supply/demand shocks) that are nearly impossible to predict. 
 
-**Minimal high-signal features:**
+**Features**
 
 | Feature            | Type    | Description                      |
 |--------------------|---------|----------------------------------|
@@ -233,9 +229,10 @@ ForCommodity prices are largely driven by political factors—sudden supply/dema
 | `day_of_month`     | known   | 1-31                             |
 | `quarter`          | known   | 1-4                              |
 
-This minimal set gives DeepAR meaningful signals beyond raw price while keeping processing fast.
 
-## Interest Rates
+### Interest Rates
+
+This is the difficult one
 
 Since we're using XGBoost Classification (Hike/Cut/Hold), we need to engineer features that represent the "Reaction Function" of the central bank. Once again, note that we're currently only dealing with the US Fed.
 
@@ -318,16 +315,32 @@ For even stronger features, we could look into expert sentiments and use NLP to 
 
 The following features have been selected as the final 7:
 
-- `Core_PCE_3M_Ann`     : Recent Inflation momentum
+- `Core_PCE_1M_Ann`     : Recent Inflation momentum
 - `Unemployment_Gap`    : Current Unemployment - Natural Rate
 - `CPI_Surprise_Proxy`  : Inflation deviation from expectations
 - `Spread_3M_2Y`        : short-term rate expectations
 - `Spread_2Y_10Y`       : long-term expectations / recession signal
-- `2Y_10Y_Spread`       : Yield curve, a key recession indicator
-- `Financial_Conditions_Index`: macro stress indicator
+- `Fin_Cond_Ind`        : macro stress indicator, will just be NFCI
+- `DFEDTARU`            : Fed's own estimate of the neutral rate
+
+With target class:
+
+$$\text{Target} = \begin{cases}
+\text{Hike} & \text{if } \text{Target\_Class} = 1 \\
+\text{Cut} & \text{if } \text{Target\_Class} = -1 \\
+\text{Hold} & \text{if } \text{Target\_Class} = 0 \\
+\end{cases}
+$$
+
+and target_class being selected by $\delta_t$:
+
+$$
+\delta_t = \text{FFR}_t - \text{FFR}_{t-1}
+$$
+
+<!-- Note: Might have to change this due to frequency mismatch, idk yet -->
 
 **Notes**
 
-- **Point-in-Time Accuracy:** Don't forget to lag the macro features in order to prevent look-ahead bias.
+- **Point-in-Time Accuracy:** Don't forget to lag the macro features, again.
 - **Look-ahead Bias:** The `Target_Class` must be shifted backward by the interval between the feature date and the subsequent FOMC meeting.
-- **Stationarity:** Log returns or first differences () should be used for non-stationary market prices to ensure the XGBoost trees split on meaningful variance.

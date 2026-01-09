@@ -38,8 +38,10 @@ WIF
 
 # Legacy & Value ("Stable-ish" Alternativess)
 LTC
-XMR
+# XMR
 BCH
+
+# Note: Binance removed XMR in 2024, so it's going to misalign dates, so skip it.
 
 # Artificial Intelligence (Growth/Narrative Sector)
 NEAR

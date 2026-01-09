@@ -36,6 +36,7 @@ from core import (
     moving_average,
     rolling_volatility,
 )
+
 from core.processor.dw import add_crypto_date_features
 
 
@@ -161,5 +162,3 @@ if __name__ == "__main__":
         coins = [line.split('#')[0].strip() for line in f if line.strip() and not line.lstrip().startswith('#')]
 
     process_all_data(coins, pkg)
-
-

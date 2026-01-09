@@ -1,23 +1,18 @@
 # All Tachion requirements
 # See the README for installation instructions.
 
-# Note directly used but just for compatibility
-numpy==1.26.4
-
-# Misc
-python-dotenv==1.0.0
-
 # Backend
 fastapi==0.104.1
 
 # Models
 torch==2.1.0
-scikit-learn==1.6.2
-xgboost=2.1.4
+scikit-learn==1.8.0
+xgboost==2.1.4
 
 # Data Handling
 pandas==2.1.0
 pyarrow==14.0.0
+openpyxl==3.1.0
 
 # API
 fredapi==0.5.1
@@ -31,7 +26,12 @@ yfinance==0.2.54
 # Testing
 pytest==7.4.4
 
-# MISC
+# Not directly used but just for compatibility
+numpy==1.26.4
+
+# Misc
+python-dotenv==1.0.0
 
 # To run .ipynb files (project doesn't need this but I do)
-#ipykernel
+ipykernel==6.31.0
+notebook==7.1.0

@@ -166,79 +166,33 @@ Tachion/
 ├── README.md
 ├── requirements.txt
 ├── pyproject.toml
-├── .env                    # API keys (not committed but necessary to run project locally)
-├── api/                    # Proprietary FastAPI backend
-│   ├── __init__.py
-│   ├── README.md
-│   └── predict.py
-|
-├── core/                   # Reusable utilities
-│   ├── __init__.py
+├── .env                    # Make this & put your API keys here
+├── api/                    # FastAPI backend
+│
+├── core/
 │   ├── README.md
 │   ├── apis/               # API wrappers
-│   │   ├── biapi.py        # Binance API (crypto)
-│   │   ├── frapi.py        # FRED API (interest rates)
-│   │   ├── oaapi.py        # OANDA API (forex, commodities)
-│   │   ├── tdapi.py        # TwelveData API (equities)
-│   │   └── yfapi.py        # yfinance API (equities inference)
+│   │   ├── biapi.py        # For the Binance API
+│   │   ├── frapi.py        # FRED API
+│   │   ├── oaapi.py        # OANDA API
+│   │   ├── tdapi.py        # TwelveData API
+│   │   └── yfapi.py        # yfinance API (Yahoo Finance)
 │   └── processor/          # Data processing utilities
-│       ├── lr.py           # Log returns, volume change
-│       ├── ma.py           # Moving average
-│       ├── rv.py           # Rolling volatility
-│       └── dw.py           # Date features
 |
-├── data/                   # Data collection and preparation
-│   ├── README.md
+├── data/                   # Data collection & engineer
 │   ├── comm/               # Commodities (gold, silver, oil)
-│   │   ├── comms.txt
-│   │   ├── collector.py
-│   │   ├── formatter.py
-│   │   └── raw/
 │   ├── crypto/
-│   │   ├── coins.txt
-│   │   ├── collector.py
-│   │   ├── formatter.py
-│   │   └── raw/
 │   ├── equities/
-│   │   ├── companies.txt
-│   │   ├── collector.py
-│   │   ├── formatter.py
-│   │   ├── vix.py
-│   │   └── raw/
-│   ├── forex/
-│   │   ├── currencies.txt
-│   │   ├── collector.py
-│   │   ├── formatter.py
-│   │   └── raw/
-│   └── interest/
-│       ├── fred_tickers.txt
-│       ├── collector.py
-│       └── raw/
+│   ├── forex/              # Currencies
+│   └── interest/           # Interest rate iddicators
 |
 ├── frontend/
-│   ├── README.md
-│   ├── index.html
-│   ├── styles.css
-│   ├── main.js
-│   ├── components/
-│   │   ├── footer.js
-│   │   ├── graph.js
-│   │   ├── header.js
-│   │   └── sidebar.js
-│   └── js/
-│       ├── api.js
-│       ├── events.js
-│       ├── state.js
-│       ├── ui.js
-│       └── visualizer.js
-|
-├── imgs/
-├── models/             # Pre-trained models
-│   └── README.md
-├── test/               # Lots of tests
+│   ├── components/         # UI: footer, graphing, etc.
+│   └── js/                 # Actual JS logic
 │
-└── train/              # Model definitions & training loop
-    └── README.md
+├── test/                   # Testing utils (core)
+│
+└── train/                  # Model definitions & training loop
 ```
 
 ## Attributions

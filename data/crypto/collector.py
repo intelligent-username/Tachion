@@ -35,6 +35,7 @@ def write_data_cr(symbols):
 
     # JSON records are written chronologically (oldest to newest)
 
+
 if __name__ == "__main__":
     # A total of 30 coins
 
