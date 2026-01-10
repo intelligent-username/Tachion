@@ -3,7 +3,7 @@
 ![Python 3.11](https://img.shields.io/badge/python-3.11-blue)
 ![License](https://img.shields.io/badge/license-Non--Commercial-red)
 
-<img src="../imgs/Logo.svg" width="256" height="256" alt="Logo">
+![Logo](../imgs/Logo.svg)
 
 ## Table of Contents
 
@@ -49,11 +49,15 @@ Once the learning is done, DeepAR would have generated a statistical distributio
 
 This allows Tachion to provide confidence intervals alongside predictions, giving users a sense of uncertainty in the forecast.
 
+See [this repository](https://github.com/intelligent-username/RNN) for more on RNNs and their implementation.
+
 ### XGBoost Explained
 
-When it comes to interest rate predictions, we're no longer predicting continuous values, but categorical ones (hike/cut/hold). This requires us to perform classification instad of regression. There are [many algorithms for classification](https://github.com/intelligent-username/classification). For this project, we'll go with XGBoost.
+When it comes to interest rate predictions, we're no longer predicting continuous values, but categorical ones (hike/cut/hold). This requires us to perform classification instad of regression. There are many algorithms for classification. For this project, we'll go with XGBoost.
 
 XGBoost (Extreme Gradient Boosting) is a highly efficient gradient boosting framework that excels at classification tasks. For interest rate predictions, it leverages economic indicators and historical patterns to classify the probability of rate hikes, cuts, or holds. Its ensemble of decision trees captures complex non-linear relationships in macroeconomic data. This, in turn, allows for decently robust predictions (as the Fed, in theory, is supposed to make data-driven decisions). However, it will require a lot of much feature engineering to get right.
+
+See [this writeup](https://github.com/intelligent-username/Classification) for more on classification algorithms and XGBoost.
 
 ## Usage
 
@@ -159,7 +163,7 @@ Once the frontend is finalized, instructions for the frontend will be added as w
 
 Below are some of the important files and folders in this project:
 
-```md
+```bash
 Tachion/
 ├── LICENSE
 ├── README.md
@@ -211,6 +215,10 @@ Other sources:
 - Cleveland NowCast for real interest rates and CPI consensus:
   - [Cleveland Fed NowCast](https://www.clevelandfed.org/indicators-and-data/inflation-expectations)
   - [Original Excel File](https://www.clevelandfed.org/-/media/files/webcharts/inflationexpectations/inflation-expectations.xlsx?sc_lang=en&hash=C27818913D96CEDD80E3136B9946CFA7)
+
+The original DeepAR paper (actually accessibly written):
+
+Salinas et. al, "DeepAR: Probabilistic Forecasting with Autoregressive Recurrent Networks", 22 Feb. 2019, [https://arxiv.org/abs/1704.04110](https://arxiv.org/abs/1704.04110), last accessed January 2026.
 
 ## Contributing
 

@@ -10,22 +10,28 @@ The `Core` module is for any code that is repeated. It contains utilities for:
 - Enforcing time context windows, horizons, and quantiles.
 - Anything else that's used across multiple modules
 
+Below are some of the important files and folders in this project.
+
 ## Files
+
+These files are wrappers for making API calls:
 
 ```md
 apis/              # Wrappers for API calls
 ├── biapi.py       # Binance API (crypto)
 ├── frapi.py       # FRED API (interest rates)
-├── oaapi.py       # OANDA API (forex, commodities)
+├── oaapi.py       # OANDA API (forex, comm)
 ├── tdapi.py       # TwelveData API (equities)
-└── yfapi.py       # yfinance API (equities inference)
+└── yfapi.py       # yfinance API (for inference)
 ```
 
+These files do math and other operations for the preprocessing/feature engineering step:
+
 ```md
-processor/         # Reusable math for preprocessing
+processor/         # Math for preprocessing
 ├── dw.py          # Date features
 ├── lr.py          # Log returns, volume change
 ├── ma.py          # Moving average calculator
-├── pw.py          # Progress Writer: prints ratio
-└── rv.py          # Rolling volatility calculator
+├── pw.py          # Progress for long processes
+└── rv.py          # Rolling volatility
 ```

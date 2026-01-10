@@ -13,20 +13,33 @@ test/
 
 ## Running Tests
 
+ Run all tests
+
 ```bash
-# Run all tests
 pytest
+```
 
-# Run with verbose output
+Run with verbose output
+
+```bash
 pytest -v
+```
 
-# Run specific test file
+Run specific test file
+
+```bash
 pytest test/test_bapi.py
+```
 
-# Run specific test class
+Run specific test class
+
+```bash
 pytest test/test_bapi.py::TestBinanceAPI
+```
 
-# Run with coverage
+Run with coverage
+
+```bash
 pytest --cov=core --cov=data --cov-report=term-missing
 ```
 

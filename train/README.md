@@ -10,7 +10,7 @@ Note that the predictions for commodities won't be as strong, as they're affecte
 
 This folder contains the following important files:
 
-```md
+```bash
 ├── deep.py           # DeepAR model definition
 ├── xg.py             # XGBoost model definition
 ├── train_deepar.py   # Script for training DeepAR models
@@ -21,8 +21,9 @@ This folder contains the following important files:
 
 ### DeepAR
 
-- The DeepAR model will return a probability distribution. This is especially nice for making quantile-based predictions and going extra risky/conservative based on your risk tolerance. It will give lots of data for making a decision.
-- Once the DeepAR model is trained, when making inferences, we don't actually need as long of a history window as we do for training. For example, we could just go with the past 10 days instead of the past 5 years. This'll speed up inferences significantly.
+DeepAR uses "a methodology for producing accurate probabilistic forecasts, based on training an auto-regressive LSTM-based recurrent network model on a large number of related time series" (Salinas et al., 2017). DeepAR uses negative-log likelihood for predictions and makes predictions in the form of Monte Carlo samples for computing quantile estaimtes. It also doesn't require much feature engineering, as the RNN is able to learn temporal patterns on its own. The RNN is also able to learn seasonal trends, which is especially helpful for something like crytpocurrencies.
+
+Once the DeepAR model is trained, when making inferences, we don't actually need as long of a history window as we do for training. For example, we could just go with the past 10 days instead of the past 5 years. This'll speed up inferences significantly.
 
 ### XGBoost
 

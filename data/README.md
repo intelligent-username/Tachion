@@ -4,11 +4,13 @@ File Structure
 
 Different folders are for collecting data on different things.
 
-```md
-├── comm                # Commodities going back ~16 years
-├── crypto/             # Major cryptos, going back ~5 years
-├── equities/           # Representative companies, ~5 years
-└── forex/              # Foreign exchange data going back ~15 years
+Each class has a different span of historical data, largely picked based on how volatile it is, but of course all have enough to ensure good model training.
+
+```bash
+├── comm                # Commodities: ~16 years
+├── crypto/             # Major cryptos: ~5 years
+├── equities/           # Stocks: ~5 years
+└── forex/              # Currencies: ~15 years
 ```
 
 The data folder is for:
@@ -242,7 +244,7 @@ There are three "types" of factors I will consider:
 
 The goal of the fed is to have unemployment rates low (around 4% is considered 'natural') while maintaining inflation at around 2% (again, that's what considered 'natural'). Since companies (and people) largely rely on banks, i.e. loans, for liquidity, the interest they pay on these loans has a big effect on how money moves. As such, the rates are used as a hinge to steer the economy. When rates are cut, borrowing becomes easier, spending increases, and we getmore jobs. If rates are hiked, borrinwg becomes harder, spending goes down, and inflation is lowered.
 
-![Table Summarizing these features](../imgs/fed.png)
+![Table Summarizing these features](../imgs/fed.svg)
 
 Basically, the indicator for whether or not looks like this:
 
