@@ -242,7 +242,7 @@ There are three "types" of factors I will consider:
 - Market-implied expectations
 - Financial conditions & sentiment
 
-The goal of the fed is to have unemployment rates low (around 4% is considered 'natural') while maintaining inflation at around 2% (again, that's what considered 'natural'). Since companies (and people) largely rely on banks, i.e. loans, for liquidity, the interest they pay on these loans has a big effect on how money moves. As such, the rates are used as a hinge to steer the economy. When rates are cut, borrowing becomes easier, spending increases, and we getmore jobs. If rates are hiked, borrinwg becomes harder, spending goes down, and inflation is lowered.
+The goal of the fed is to have unemployment rates low (around 4% is considered 'natural') while maintaining inflation at around 2% (again, that's what considered 'natural'). Since companies (and people) largely rely on banks, i.e. loans, for liquidity, the interest they pay on these loans has a big effect on how money moves. As such, the rates are used as a hinge to steer the economy. When rates are cut, borrowing becomes easier, spending increases, and we get more jobs. If rates are hiked, borrinwg becomes harder, spending goes down, and inflation is lowered.
 
 ![Table Summarizing these features](../imgs/fed.svg)
 

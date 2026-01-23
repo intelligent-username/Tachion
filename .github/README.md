@@ -220,6 +220,10 @@ The original DeepAR paper (actually accessibly written):
 
 Salinas et. al, "DeepAR: Probabilistic Forecasting with Autoregressive Recurrent Networks", 22 Feb. 2019, [https://arxiv.org/abs/1704.04110](https://arxiv.org/abs/1704.04110), last accessed January 2026.
 
+GluonTS, Amazon's official DeepAR library (implementation), which I took lots of inspiration from:
+
+[https://github.com/awslabs/gluonts](https://github.com/awslabs/gluonts)
+
 ## Contributing
 
 Contributions are welcome. Please follow these guidelines:
