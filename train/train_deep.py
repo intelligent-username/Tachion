@@ -1,252 +1,127 @@
 """
-Train DeepAR model for time series forecasting
+Train DeepAR model using GluonTS.
 
-Loads processed parquet data from data/{asset}/processed/
-Trains DeepAR with Student-t likelihood
-Saves model to models/
+Loads processed parquet data, converts to GluonTS PandasDataset format,
+trains DeepAREstimator, and saves the trained predictor.
 """
 
-import pandas as pd
-import numpy as np
-import torch
-import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
+import argparse
 from pathlib import Path
 
-from .deep import DeepAR, student_t_nll
+from gluonts.evaluation import make_evaluation_predictions, Evaluator
 
-
-class TimeSeriesDataset(Dataset):
-    """
-    Dataset for DeepAR training.
-    Creates sliding window sequences from processed data.
-    """
-    
-    def __init__(self, df, feature_cols, target_col, context_length=48, prediction_length=1):
-        """
-        :param df: DataFrame with columns for features and target
-        :param feature_cols: List of feature column names
-        :param target_col: Target column name (e.g., 'log_return')
-        :param context_length: Number of historical steps to use
-        :param prediction_length: Number of steps to predict (for training, usually 1)
-        """
-        self.context_length = context_length
-        self.prediction_length = prediction_length
-        
-        # Extract feature matrix and target
-        self.features = df[feature_cols].values.astype(np.float32)
-        self.target = df[target_col].values.astype(np.float32)
-        
-        # Valid indices (need enough history)
-        self.valid_indices = np.arange(context_length, len(df) - prediction_length + 1)
-    
-    def __len__(self):
-        return len(self.valid_indices)
-    
-    def __getitem__(self, idx):
-        i = self.valid_indices[idx]
-        
-        # Context window
-        x = self.features[i - self.context_length:i]
-        
-        # Target (can be single step or multi-step)
-        y = self.target[i:i + self.prediction_length]
-        
-        return torch.tensor(x), torch.tensor(y)
-
-
-def get_feature_cols(asset):
-    """Get feature columns for each asset type."""
-    if asset == "crypto":
-        return [
-            'log_return_lag1', 'volume_change', '5_period_MA', '20_period_MA',
-            'rolling_volatility_5', 'rolling_volatility_20', 'btc_log_return_lag1',
-            'hour_of_day', 'day_of_week', 'day_of_month', 'is_weekend'
-        ]
-    elif asset == "equities":
-        return [
-            'log_return_lag1', 'volume_change', '5_day_MA', '50_day_MA',
-            'rolling_volatility_5', 'rolling_volatility_50', 'sp_log_return_lag1',
-            'delta_vix_lag1', 'day_of_week', 'day_of_month', 'quarter'
-        ]
-    elif asset in ["forex", "comm"]:
-        return [
-            'log_return_lag1', 'volume_change', '5_period_MA', '20_period_MA',
-            'rolling_volatility_5', 'rolling_volatility_20',
-            'day_of_week', 'day_of_month', 'quarter'
-        ]
-    else:
-        raise ValueError(f"Unknown asset type: {asset}")
-
-
-def load_data(asset):
-    """Load processed data for asset type."""
-    data_dir = Path(__file__).resolve().parents[1] / "data" / asset / "processed"
-    
-    # Find parquet file
-    parquet_files = list(data_dir.glob("*.parquet"))
-    if not parquet_files:
-        raise FileNotFoundError(
-            f"No processed data found in {data_dir}\n"
-            f"Please run: python -m data.{asset}.formatter"
-        )
-    
-    df = pd.read_parquet(parquet_files[0])
-    
-    # Drop NaN rows
-    feature_cols = get_feature_cols(asset)
-    df = df.dropna(subset=feature_cols + ['log_return'])
-    
-    return df, feature_cols
+from .deep import create_deepar_estimator, save_predictor
+from .loader import load_gluonts_dataset, get_asset_freq
 
 
 def train(
-    asset="crypto",
-    context_length=48,
-    hidden_size=64,
-    num_layers=2,
-    batch_size=64,
-    epochs=20,
-    lr=1e-3,
-    val_split=0.1,
-    device=None
+    asset: str = "crypto",
+    prediction_length: int = 24,
+    context_length: int = 48,
+    hidden_size: int = 64,
+    num_layers: int = 2,
+    batch_size: int = 64,
+    epochs: int = 20,
+    lr: float = 1e-3,
+    val_split: float = 0.1,
+    device: str = "auto",
 ):
     """
-    Train DeepAR model for specified asset.
+    Train DeepAR model for specified asset type.
     
     :param asset: Asset type ('crypto', 'equities', 'forex', 'comm')
-    :param context_length: Historical context window size
+    :param prediction_length: Forecast horizon
+    :param context_length: Historical context window
     :param hidden_size: LSTM hidden dimension
     :param num_layers: Number of LSTM layers
     :param batch_size: Training batch size
-    :param epochs: Number of training epochs
+    :param epochs: Number of epochs
     :param lr: Learning rate
     :param val_split: Fraction for validation
-    :param device: torch device (auto-detected if None)
+    :param device: Device for training ('auto', 'cpu', 'cuda')
     """
-    if device is None:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Training DeepAR for {asset}")
+    print(f"Config: prediction_length={prediction_length}, context={context_length}, "
+          f"hidden={hidden_size}, layers={num_layers}")
     
-    print(f"Training DeepAR for {asset} on {device}")
-    print(f"Config: context={context_length}, hidden={hidden_size}, layers={num_layers}")
+    # Get frequency for this asset type
+    freq = get_asset_freq(asset)
     
-    # Load data
+    # Load data as GluonTS datasets
     print("\nLoading data...")
-    df, feature_cols = load_data(asset)
-    print(f"Loaded {len(df)} samples, {len(feature_cols)} features")
+    train_ds, test_ds = load_gluonts_dataset(
+        asset_type=asset,
+        prediction_length=prediction_length,
+        val_split=val_split,
+    )
     
-    # Time-aware split
-    n = len(df)
-    val_idx = int(n * (1 - val_split))
+    print(f"Train series: {len(list(train_ds))}")
+    print(f"Test series: {len(list(test_ds))}")
     
-    train_df = df.iloc[:val_idx]
-    val_df = df.iloc[val_idx:]
-    
-    print(f"Train: {len(train_df)}, Val: {len(val_df)}")
-    
-    # Create datasets
-    train_dataset = TimeSeriesDataset(train_df, feature_cols, 'log_return', context_length)
-    val_dataset = TimeSeriesDataset(val_df, feature_cols, 'log_return', context_length)
-    
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    
-    # Model
-    input_size = len(feature_cols)
-    model = DeepAR(
-        input_size=input_size,
-        hidden_size=hidden_size,
+    # Create estimator
+    estimator = create_deepar_estimator(
+        prediction_length=prediction_length,
+        freq=freq,
+        context_length=context_length,
         num_layers=num_layers,
-        output_size=3  # Student-t: mu, log_sigma, nu
-    ).to(device)
+        hidden_size=hidden_size,
+        lr=lr,
+        batch_size=batch_size,
+        epochs=epochs,
+        device=device,
+    )
     
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, factor=0.5)
+    # Train
+    print("\nTraining...")
+    predictor = estimator.train(train_ds)
     
-    print(f"\nModel parameters: {sum(p.numel() for p in model.parameters()):,}")
+    # Evaluate on test set
+    print("\nEvaluating on test set...")
+    forecast_it, ts_it = make_evaluation_predictions(
+        dataset=test_ds,
+        predictor=predictor,
+        num_samples=100,
+    )
     
-    # Training loop
-    best_val_loss = float('inf')
+    forecasts = list(forecast_it)
+    tss = list(ts_it)
     
-    for epoch in range(epochs):
-        # Train
-        model.train()
-        train_loss = 0
-        for x, y in train_loader:
-            x, y = x.to(device), y.to(device)
-            
-            optimizer.zero_grad()
-            params = model(x)
-            
-            # Use last timestep's params to predict next value
-            last_params = params[:, -1, :]  # (batch, output_size)
-            loss = student_t_nll(last_params, y.squeeze(-1))
-            
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            optimizer.step()
-            
-            train_loss += loss.item() * x.size(0)
-        
-        train_loss /= len(train_dataset)
-        
-        # Validate
-        model.eval()
-        val_loss = 0
-        with torch.no_grad():
-            for x, y in val_loader:
-                x, y = x.to(device), y.to(device)
-                params = model(x)
-                last_params = params[:, -1, :]
-                loss = student_t_nll(last_params, y.squeeze(-1))
-                val_loss += loss.item() * x.size(0)
-        
-        val_loss /= len(val_dataset)
-        scheduler.step(val_loss)
-        
-        current_lr = optimizer.param_groups[0]['lr']
-        print(f"Epoch {epoch+1:02d}/{epochs} | Train: {train_loss:.4f} | Val: {val_loss:.4f} | LR: {current_lr:.2e}")
-        
-        # Save best model
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            models_dir = Path(__file__).resolve().parents[1] / "models"
-            models_dir.mkdir(exist_ok=True)
-            model_path = models_dir / f"deepar_{asset}.pt"
-            torch.save({
-                'model_state_dict': model.state_dict(),
-                'config': {
-                    'input_size': input_size,
-                    'hidden_size': hidden_size,
-                    'num_layers': num_layers,
-                    'output_size': 3,
-                    'context_length': context_length
-                }
-            }, model_path)
+    evaluator = Evaluator(quantiles=[0.025, 0.5, 0.975])
+    agg_metrics, item_metrics = evaluator(tss, forecasts)
     
-    print(f"\nTraining complete. Best val loss: {best_val_loss:.4f}")
-    print(f"Model saved to: {model_path}")
+    print("\nAggregate Metrics:")
+    for metric in ["CRPS", "ND", "RMSE", "MASE"]:
+        if metric in agg_metrics:
+            print(f"  {metric}: {agg_metrics[metric]:.4f}")
     
-    return model
+    # Save model
+    models_dir = Path(__file__).resolve().parents[1] / "models" / f"deepar_{asset}"
+    save_predictor(predictor, str(models_dir))
+    print(f"\nModel saved to: {models_dir}")
+    
+    return predictor, agg_metrics
 
 
 if __name__ == "__main__":
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="Train DeepAR model")
-    parser.add_argument("--asset", type=str, default="crypto", 
+    parser = argparse.ArgumentParser(description="Train DeepAR model with GluonTS")
+    parser.add_argument("--asset", type=str, default="crypto",
                         choices=["crypto", "equities", "forex", "comm"])
+    parser.add_argument("--prediction-length", type=int, default=24)
+    parser.add_argument("--context-length", type=int, default=48)
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--context-length", type=int, default=48)
     parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--device", type=str, default="auto",
+                        choices=["auto", "cpu", "cuda"])
     
     args = parser.parse_args()
     
     train(
         asset=args.asset,
+        prediction_length=args.prediction_length,
+        context_length=args.context_length,
         epochs=args.epochs,
         batch_size=args.batch_size,
-        context_length=args.context_length,
-        lr=args.lr
+        lr=args.lr,
+        device=args.device,
     )

@@ -222,7 +222,9 @@ Salinas et. al, "DeepAR: Probabilistic Forecasting with Autoregressive Recurrent
 
 GluonTS, Amazon's official DeepAR library (implementation), which I took lots of inspiration from:
 
-[https://github.com/awslabs/gluonts](https://github.com/awslabs/gluonts)
+[https://github.com/awslabs/gluonts](https://github.com/awslabs/gluonts).
+
+Documentation: [can be found here](https://ts.gluon.ai/stable/api/gluonts/gluonts.torch.model.deepar.html).
 
 ## Contributing
 
