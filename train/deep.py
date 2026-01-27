@@ -67,7 +67,7 @@ def create_deepar_estimator(
     if context_length is None:
         context_length = prediction_length
     
-    # Device selection
+    # Hopefully GPU stops buggin
     if device == "auto":
         is_cuda = torch.cuda.is_available()
         accelerator = "gpu" if is_cuda else "cpu"
@@ -77,41 +77,29 @@ def create_deepar_estimator(
         accelerator = "gpu" if device.startswith("cuda") else "cpu"
         print(f"  Device: {accelerator.upper()} (Forced)")
 
-    # Setup callbacks
     callbacks = []
-    
-    # Custom progress bar with known total batches
+
+    # Progress printing    
     progress_bar = DetailedProgressBar(num_batches_per_epoch=num_batches_per_epoch)
     callbacks.append(progress_bar)
     
-    # Checkpoint callback
+    checkpoint_root = str(checkpoint_dir.parent) if checkpoint_dir else None
     if checkpoint_dir:
-        checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        checkpoint_callback = ModelCheckpoint(
-            dirpath=str(checkpoint_dir),
-            filename="deepar-{epoch:02d}-{train_loss:.4f}",
-            save_top_k=3,
-            monitor="train_loss",
-            mode="min",
-            save_last=True,
-            every_n_epochs=1,
-        )
-        callbacks.append(checkpoint_callback)
-        print(f"  Checkpoints: {checkpoint_dir}")
+        checkpoint_dir.parent.mkdir(parents=True, exist_ok=True)
+        print(f"  Checkpoints: {checkpoint_dir.parent}/lightning_logs/")
 
-    # Trainer config
     trainer_kwargs = {
         "max_epochs": epochs,
         "accelerator": accelerator,
         "devices": 1,
+        "precision": "16-mixed",
         "enable_model_summary": True,
-        "enable_checkpointing": False,  # We use our own callback
+        "enable_checkpointing": True,
         "callbacks": callbacks,
         "enable_progress_bar": True,
-        # Log metrics every 10 batches for better visibility
         "log_every_n_steps": 10,
-        # Limit train batches to show total in progress bar
         "limit_train_batches": num_batches_per_epoch,
+        "default_root_dir": checkpoint_root,
     }
     
     return DeepAREstimator(

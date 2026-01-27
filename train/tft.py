@@ -80,41 +80,31 @@ def create_tft_estimator(
         accelerator = "gpu" if device.startswith("cuda") else "cpu"
         print(f"  Device: {accelerator.upper()} (Forced)")
 
-    # Setup callbacks
     callbacks = []
     
     # Progress bar
     progress_bar = DetailedProgressBar(num_batches_per_epoch=num_batches_per_epoch)
     callbacks.append(progress_bar)
     
-    # Checkpoint callback
+    # Set checkpoint root directory
+    checkpoint_root = str(checkpoint_dir.parent) if checkpoint_dir else None
     if checkpoint_dir:
-        checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        checkpoint_callback = ModelCheckpoint(
-            dirpath=str(checkpoint_dir),
-            filename="tft-{epoch:02d}-{train_loss:.4f}",
-            save_top_k=3,
-            monitor="train_loss",
-            mode="min",
-            save_last=True,
-            every_n_epochs=1,
-        )
-        callbacks.append(checkpoint_callback)
-        print(f"  Checkpoints: {checkpoint_dir}")
+        checkpoint_dir.parent.mkdir(parents=True, exist_ok=True)
+        print(f"  Checkpoints: {checkpoint_dir.parent}/lightning_logs/")
 
     # Trainer config
-    # NOTE: enable_checkpointing=False because we add our own ModelCheckpoint callback
-    # GluonTS would otherwise add a second one, causing a conflict
     trainer_kwargs = {
         "max_epochs": epochs,
         "accelerator": accelerator,
         "devices": 1,
+        "precision": "16-mixed",  # Mixed precision for ~1.5x speedup
         "enable_model_summary": True,
-        "enable_checkpointing": False,  # We use our own callback
+        "enable_checkpointing": True,
         "callbacks": callbacks,
         "enable_progress_bar": True,
         "log_every_n_steps": 10,
         "limit_train_batches": num_batches_per_epoch,
+        "default_root_dir": checkpoint_root,
     }
     
     return TemporalFusionTransformerEstimator(
