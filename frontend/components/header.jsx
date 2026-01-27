@@ -6,7 +6,7 @@ export default function Header() {
 
     return (
         <header className="header">
-            <img src="public/Logo.svg" alt="Tachion Logo" className="logo" />
+            <img src="/Logo.svg" alt="Tachion Logo" className="logo" />
             <h1>Tachion</h1>
             <span className="date">{formatDate(today)}</span>
         </header>

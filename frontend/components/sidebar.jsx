@@ -82,7 +82,7 @@ export default function Sidebar() {
             >
                 <span className="button-text">Predict!</span>
                 <span className="button-subtitle">
-                    (calls appropriate model based on asset type)
+                    (Model will return a 95% CI)
                 </span>
             </button>
         </div>
