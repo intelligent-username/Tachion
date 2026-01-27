@@ -1,30 +1,23 @@
 # Frontend
 
-this contains all of the code required for the front end. I will keep it minimal, and finish it last.
+This folder contains the React-based frontend, built with **Vite** and **Bun**.
 
-I will try to restrict this folder to only the following files:
+## Setup
 
-- `index.html`: for the main page
-- `styles.css`: for the main styles
-- `main.js`: wires all of the front end logic together (import, bootstrap, initial state)
-
-"Logical" operations:
-
-```nd
-js/
-  api.js:         # calls the API, retrieves formatted data
-  ui.js:          # DOM mutations
-  events.js:      # DOM listeners
-  visualizer.js:  # preps data for graphing
-  state.js:       # holds in-memory data for other sources
+```bash
+cd frontend
+bun install
+bun dev
 ```
 
-Visual components:
+## File Structure
 
 ```md
-components/
-  sidebar.js:     # sidebar: search feature, settings, details
-  header.js:      # header: app name, logo, current date
-  footer.js:      # footer: links to GitHub, documentation, etc.
-  graph.js:       # prepared data from visualizer.js -> plots
+frontend/
+  components/     # React components
+  js/             # Logic & utilities
+  public/         # Static assets
+  index.html      # Entry point
+  main.jsx        # React root
+  vite.config.js  # Vite config
 ```

@@ -34,4 +34,10 @@ processor/         # Math for preprocessing
 ├── ma.py          # Moving average calculator
 ├── pw.py          # Progress for long processes
 └── rv.py          # Rolling volatility
+
+training/          # Training configurations
+├── config.py      # Argument parsing config
+├── constants.py   # Training constants
+└── loads.py       # Loaders
+
 ```

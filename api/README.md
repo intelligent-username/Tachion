@@ -11,8 +11,7 @@ POST /api/predict
 ```json
 {
     "asset": "AAPL",
-    "horizon": 7,
-    "data": "CSV string"
+    "horizon": 7
 }
 ```
 
@@ -20,11 +19,13 @@ Response:
 
 ```json
 {
-    // These are the predictions
-    "timestamps": [...],
-    "medians": [...],
-    "lower_95s": [...],
-    "upper_95s": [...],
-    "metadata": {"model": "LGBM_quantile_v1"}
+    "timestamps": ["2023-01-01", "2023-01-02", ...],
+    "medians": [150.5, 151.2, ...],
+    "lower_95s": [148.0, 149.5, ...],
+    "upper_95s": [153.0, 152.9, ...],
+    "metadata": {
+        "model": "deepar_equities",
+        "horizon": 7
+    }
 }
 ```

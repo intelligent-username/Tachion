@@ -11,10 +11,11 @@ Note that the predictions for commodities won't be as strong, as they're affecte
 This folder contains the following important files:
 
 ```bash
-├── loader.py         # Our proprietary data loader, needs to overwrite the GluonTS built-in DeepAR loader.
-├── deep.py           # DeepAR model definition with Student-t likelihood
-├── xg.py             # XGBoost classifier with Focal Loss and SMOTE
-├── train_deep.py     # Script for training DeepAR models
+├── loader.py         # Data loader (GluonTS compatible)
+├── deep.py           # DeepAR model definition
+├── tft.py            # TFT model definition
+├── xg.py             # XGBoost classifier
+├── train_deep.py     # Script for training DeepAR/TFT models
 └── train_xgboost.py  # Script for training XGBoost interest rate classifier
 ```
 
@@ -26,16 +27,16 @@ This folder contains the following important files:
 python -m train.train_xgboost
 ```
 
-Loads `data/interest/processed/Interest_Features.parquet` and trains a classifier for cut/hold/hike. Model saved to `models/interest_rate_classifier.json`.
+Loads `data/interest/processed/Interest_Features.parquet` and trains a classifier.
 
-### Training DeepAR (Time Series)
+### Training DeepAR / TFT (Time Series)
 
 ```bash
-# Train on crypto
-python -m train.train_deep --asset crypto --epochs 20
+# Train TFT on crypto
+python -m train.train_deep crypto tft
 
-# Train on equities
-python -m train.train_deep --asset equities --epochs 30
+# Train DeepAR on equities
+python -m train.train_deep equities deepar
 
 # Options: crypto, equities, forex, comm
 ```
