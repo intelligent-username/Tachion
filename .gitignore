@@ -28,3 +28,8 @@ models/
 # Directory metadata & other stuff
 *.egg-info
 lightning_logs/
+
+
+# Front end
+
+node_modules/
