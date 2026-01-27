@@ -7,15 +7,17 @@
 
 ## Table of Contents
 
-1. [Features](#features)  
-2. [Installation](#installation)  
-3. [Environment Setup](#environment-setup)
-4. [Data Collection](#data-collection)
-5. [Usage](#usage)  
-6. [File Structure](#file-structure)
-7. [Attributions](#attributions)
-8. [Contributing](#contributing)  
-9. [License](#license)  
+1. [Features](#features)
+2. [Prediction Mechanism](#prediction-mechanism)
+3. [Usage](#usage)
+   - [Installation](#installation)
+   - [Dependencies](#dependencies)
+   - [Environment Setup](#environment-setup)
+   - [Data Collection](#data-collection)
+4. [File Structure](#file-structure)
+5. [Attributions](#attributions)
+6. [Contributing](#contributing)
+7. [License](#license)  
 
 ---
 

@@ -11,6 +11,7 @@ Note that the predictions for commodities won't be as strong, as they're affecte
 This folder contains the following important files:
 
 ```bash
+├── loader.py         # Our proprietary data loader, needs to overwrite the GluonTS built-in DeepAR loader.
 ├── deep.py           # DeepAR model definition with Student-t likelihood
 ├── xg.py             # XGBoost classifier with Focal Loss and SMOTE
 ├── train_deep.py     # Script for training DeepAR models

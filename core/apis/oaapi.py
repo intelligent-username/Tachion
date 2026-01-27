@@ -18,10 +18,10 @@ def call_specific_oanda(path, instruments, num_calls, rate_limit=30):
     """
     Make Specific Calls to the OANDA API using a persistent session
 
-    :param path: Directory path to write JSON files to
-    :param instruments: List of instruments to fetch (e.g., ["EUR_USD", "GBP_USD"])
-    :param num_calls: Number of API calls per instrument (each returns up to 5000 candles)
-    :param rate_limit: Maximum API calls per second (default 30, conservative for OANDA)
+    path: Directory path to write JSON files to
+    instruments (list): List of instruments to fetch (e.g., ["EUR_USD", "GBP_USD"])
+    num_calls (int): Number of API calls per instrument (each returns up to 5000 candles)
+    rate_limit (int): Maximum API calls per second (default 30, conservative for OANDA)
     """
 
     # Get token once
@@ -182,22 +182,22 @@ def OandaAPI(url_base="https://api-fxpractice.oanda.com/v3/instruments",
     """
     Make a call to the OANDA Candles API
 
-    :param url_base: OANDA's REST API base endpoint for instruments
-    :param granularity: Time interval for candlesticks.
+    url_base (str): OANDA's REST API base endpoint for instruments
+    granularity (str): Time interval for candlesticks.
             Must be one of the following values:
                 S5, S10, S15, S30 (seconds)
                 M1, M2, M4, M5, M10, M15, M30 (minutes)
                 H1, H2, H3, H4, H6, H8, H12 (hours)
                 D (day), W (week), M (month)
-    :param count: How many data points to return. Maximum is 5000.
-    :param from_time: Start time as datetime object (UTC).
+    count (int): How many data points to return. Maximum is 5000.
+    from_time (datetime): Start time as datetime object (UTC).
             If not provided, returns most recent candles.
-    :param to_time: End time as datetime object (UTC).
+    to_time (datetime): End time as datetime object (UTC).
             Defaults to current time if not provided.
-    :param token: OANDA API token. Will use environment variable OANDA_KEY if not provided.
-    :param instrument: The currency pair (e.g., "EUR_USD", "GBP_USD").
+    token (str): OANDA API token. Will use environment variable OANDA_KEY if not provided.
+    instrument (str): The currency pair (e.g., "EUR_USD", "GBP_USD").
 
-    :return: Dict with "status" and "values" keys, matching TwelveData format for consistency.
+    Returns a Dict with "status" and "values" keys, matching TwelveData format for consistency.
             Each value contains: datetime, open, high, low, close, volume
     """
 

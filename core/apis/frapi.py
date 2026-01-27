@@ -22,9 +22,9 @@ def call_specific_fred(path, series_ids, rate_limit=119):
     """
     Fetch FRED series data and write to JSON files.
 
-    :param path: Directory path to write JSON files to
-    :param series_ids: List of FRED series IDs (e.g., ["UNRATE", "GS2"])
-    :param rate_limit: Maximum API calls per minute (default 119, FRED limit is 120)
+    path: Directory path to write JSON files to
+    series_ids (list): List of FRED series IDs (e.g., ["UNRATE", "GS2"])
+    rate_limit (int): Maximum API calls per minute (default 119, FRED limit is 120)
     """
 
     api_key = os.getenv("FRED_KEY")
@@ -121,12 +121,12 @@ def FredAPI(fred, series_id, start_date=None, end_date=None):
     """
     Fetch a FRED series using the fredapi library.
 
-    :param fred: Fred instance (already authenticated)
-    :param series_id: FRED series ID (e.g., "UNRATE", "T10Y2Y")
-    :param start_date: Start date for data (datetime object)
-    :param end_date: End date for data (datetime object)
+    fred: Fred instance (already authenticated)
+    series_id (str): FRED series ID (e.g., "UNRATE", "T10Y2Y")
+    start_date (datetime): Start date for data (datetime object)
+    end_date (datetime): End date for data (datetime object)
 
-    :return: Dict with "status" and "values" keys for consistency with other APIs.
+    Returns a Dict with "status" and "values" keys for consistency with other APIs.
              Each value contains: datetime, value
     """
 

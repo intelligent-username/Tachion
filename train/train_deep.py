@@ -1,127 +1,238 @@
 """
-Train DeepAR model using GluonTS.
+Train time series models (DeepAR or TFT) using GluonTS.
 
-Loads processed parquet data, converts to GluonTS PandasDataset format,
-trains DeepAREstimator, and saves the trained predictor.
+Usage:
+    python -m train.train_deep [asset] [model] [-n]
+    
+Examples:
+    python -m train.train_deep crypto tft -n    # Train TFT on crypto
+    python -m train.train_deep forex deepar -n  # Train DeepAR on forex
 """
 
-import argparse
 from pathlib import Path
+import time
+import sys
+import traceback
+import torch
+
+# Optimize for Tensor Cores
+torch.set_float32_matmul_precision('medium')
 
 from gluonts.evaluation import make_evaluation_predictions, Evaluator
 
-from .deep import create_deepar_estimator, save_predictor
+from .deep import create_deepar_estimator
+from .tft import create_tft_estimator
 from .loader import load_gluonts_dataset, get_asset_freq
+from core import set_training_defaults, save_predictor
+from core.training.constants import (
+    # DeepAR
+    DEEPAR_PREDICTION_LENGTH,
+    DEEPAR_CONTEXT_LENGTH,
+    DEEPAR_BATCH_SIZE,
+    DEEPAR_NUM_BATCHES_PER_EPOCH,
+    DEEPAR_EPOCHS,
+    DEEPAR_LEARNING_RATE,
+    # TFT
+    TFT_PREDICTION_LENGTH,
+    TFT_CONTEXT_LENGTH,
+    TFT_BATCH_SIZE,
+    TFT_NUM_BATCHES_PER_EPOCH,
+    TFT_EPOCHS,
+    TFT_LEARNING_RATE,
+    # Shared
+    DEFAULT_DEVICE,
+    DEFAULT_ASSET,
+    DEFAULT_MODEL,
+)
 
 
 def train(
-    asset: str = "crypto",
-    prediction_length: int = 24,
-    context_length: int = 48,
-    hidden_size: int = 64,
-    num_layers: int = 2,
-    batch_size: int = 64,
-    epochs: int = 20,
-    lr: float = 1e-3,
-    val_split: float = 0.1,
-    device: str = "auto",
+    asset: str = DEFAULT_ASSET,
+    model: str = DEFAULT_MODEL,
+    prediction_length: int = None,
+    context_length: int = None,
+    batch_size: int = None,
+    num_batches_per_epoch: int = None,
+    epochs: int = None,
+    lr: float = None,
+    device: str = DEFAULT_DEVICE,
 ):
-    """
-    Train DeepAR model for specified asset type.
+    """Train a time series model for specified asset type."""
     
-    :param asset: Asset type ('crypto', 'equities', 'forex', 'comm')
-    :param prediction_length: Forecast horizon
-    :param context_length: Historical context window
-    :param hidden_size: LSTM hidden dimension
-    :param num_layers: Number of LSTM layers
-    :param batch_size: Training batch size
-    :param epochs: Number of epochs
-    :param lr: Learning rate
-    :param val_split: Fraction for validation
-    :param device: Device for training ('auto', 'cpu', 'cuda')
-    """
-    print(f"Training DeepAR for {asset}")
-    print(f"Config: prediction_length={prediction_length}, context={context_length}, "
-          f"hidden={hidden_size}, layers={num_layers}")
+    # Set model-specific defaults
+    if model == "tft":
+        prediction_length = prediction_length or TFT_PREDICTION_LENGTH
+        context_length = context_length or TFT_CONTEXT_LENGTH
+        batch_size = batch_size or TFT_BATCH_SIZE
+        num_batches_per_epoch = num_batches_per_epoch or TFT_NUM_BATCHES_PER_EPOCH
+        epochs = epochs or TFT_EPOCHS
+        lr = lr or TFT_LEARNING_RATE
+    else:  # deepar
+        prediction_length = prediction_length or DEEPAR_PREDICTION_LENGTH
+        context_length = context_length or DEEPAR_CONTEXT_LENGTH
+        batch_size = batch_size or DEEPAR_BATCH_SIZE
+        num_batches_per_epoch = num_batches_per_epoch or DEEPAR_NUM_BATCHES_PER_EPOCH
+        epochs = epochs or DEEPAR_EPOCHS
+        lr = lr or DEEPAR_LEARNING_RATE
+    
+    model_name = "TFT" if model == "tft" else "DeepAR"
+    
+    print(f"\n{'='*60}")
+    print(f"  Training {model_name} for {asset.upper()}")
+    print(f"{'='*60}")
+    
+    # Setup paths
+    models_dir = Path(__file__).resolve().parents[1] / "models"
+    models_dir.mkdir(parents=True, exist_ok=True)
+    final_model_dir = models_dir / f"{model}_{asset}"
+    checkpoint_dir = models_dir / f"{model}_{asset}_checkpoints"
     
     # Get frequency for this asset type
     freq = get_asset_freq(asset)
     
-    # Load data as GluonTS datasets
+    # Load data
     print("\nLoading data...")
     train_ds, test_ds = load_gluonts_dataset(
         asset_type=asset,
         prediction_length=prediction_length,
-        val_split=val_split,
     )
+    print(f"  Train series: {len(list(train_ds))}")
     
-    print(f"Train series: {len(list(train_ds))}")
-    print(f"Test series: {len(list(test_ds))}")
-    
-    # Create estimator
-    estimator = create_deepar_estimator(
-        prediction_length=prediction_length,
-        freq=freq,
-        context_length=context_length,
-        num_layers=num_layers,
-        hidden_size=hidden_size,
-        lr=lr,
-        batch_size=batch_size,
-        epochs=epochs,
-        device=device,
-    )
+    # Create estimator based on model choice
+    if model == "tft":
+        estimator = create_tft_estimator(
+            prediction_length=prediction_length,
+            freq=freq,
+            context_length=context_length,
+            lr=lr,
+            batch_size=batch_size,
+            num_batches_per_epoch=num_batches_per_epoch,
+            epochs=epochs,
+            device=device,
+            checkpoint_dir=checkpoint_dir,
+        )
+    else:  # deepar
+        estimator = create_deepar_estimator(
+            prediction_length=prediction_length,
+            freq=freq,
+            context_length=context_length,
+            lr=lr,
+            batch_size=batch_size,
+            num_batches_per_epoch=num_batches_per_epoch,
+            epochs=epochs,
+            device=device,
+            checkpoint_dir=checkpoint_dir,
+        )
     
     # Train
-    print("\nTraining...")
-    predictor = estimator.train(train_ds)
+    print(f"\nStarting training ({epochs} epochs, {num_batches_per_epoch} batches/epoch)...\n")
+    train_start = time.time()
+    predictor = None
     
-    # Evaluate on test set
-    print("\nEvaluating on test set...")
+    try:
+        # num_workers=0 avoids Windows multiprocessing spawn overhead
+        predictor = estimator.train(train_ds, num_workers=0)
+        
+    except KeyboardInterrupt:
+        print("\n\nTraining interrupted. No model saved.")
+        return None, None
+    
+    except Exception as e:
+        print(f"\n\nTraining failed: {e}")
+        print(traceback.format_exc())
+        sys.exit(1)
+    
+    train_time = time.time() - train_start
+    print(f"\nTraining complete! ({train_time/60:.2f} min)")
+    
+    # Evaluate
+    print("\nEvaluating...")
     forecast_it, ts_it = make_evaluation_predictions(
         dataset=test_ds,
         predictor=predictor,
         num_samples=100,
     )
     
-    forecasts = list(forecast_it)
-    tss = list(ts_it)
-    
     evaluator = Evaluator(quantiles=[0.025, 0.5, 0.975])
-    agg_metrics, item_metrics = evaluator(tss, forecasts)
+    agg_metrics, _ = evaluator(list(ts_it), list(forecast_it))
     
-    print("\nAggregate Metrics:")
-    for metric in ["CRPS", "ND", "RMSE", "MASE"]:
-        if metric in agg_metrics:
-            print(f"  {metric}: {agg_metrics[metric]:.4f}")
+    print(f"\n  CRPS: {agg_metrics.get('CRPS', 'N/A'):.6f}")
+    print(f"  RMSE: {agg_metrics.get('RMSE', 'N/A'):.6f}")
     
-    # Save model
-    models_dir = Path(__file__).resolve().parents[1] / "models" / f"deepar_{asset}"
-    save_predictor(predictor, str(models_dir))
-    print(f"\nModel saved to: {models_dir}")
+    # Save
+    save_predictor(predictor, str(final_model_dir))
+    print(f"\nModel saved to: {final_model_dir}")
     
     return predictor, agg_metrics
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train DeepAR model with GluonTS")
-    parser.add_argument("--asset", type=str, default="crypto",
-                        choices=["crypto", "equities", "forex", "comm"])
-    parser.add_argument("--prediction-length", type=int, default=24)
-    parser.add_argument("--context-length", type=int, default=48)
-    parser.add_argument("--epochs", type=int, default=20)
-    parser.add_argument("--batch-size", type=int, default=64)
-    parser.add_argument("--lr", type=float, default=1e-3)
-    parser.add_argument("--device", type=str, default="auto",
-                        choices=["auto", "cpu", "cuda"])
+def parse_args():
+    """Parse command line arguments."""
+    asset = DEFAULT_ASSET
+    model = DEFAULT_MODEL
+    skip_modify = False
     
-    args = parser.parse_args()
+    valid_assets = ["crypto", "equities", "forex", "comm", "interest"]
+    valid_models = ["deepar", "tft"]
+    
+    args = sys.argv[1:]
+    
+    for arg in args:
+        if arg.lower() == "-n":
+            skip_modify = True
+        elif arg.lower() in valid_assets:
+            asset = arg.lower()
+        elif arg.lower() in valid_models:
+            model = arg.lower()
+        else:
+            print(f"Warning: Unrecognized argument '{arg}'")
+    
+    return asset, model, skip_modify
+
+
+if __name__ == "__main__":
+    asset, model, skip_modify = parse_args()
+    
+    # Use model-specific defaults
+    if model == "tft":
+        defaults = {
+            "asset": asset,
+            "model": model,
+            "epochs": TFT_EPOCHS,
+            "prediction_length": TFT_PREDICTION_LENGTH,
+            "context_length": TFT_CONTEXT_LENGTH,
+            "batch_size": TFT_BATCH_SIZE,
+            "num_batches_per_epoch": TFT_NUM_BATCHES_PER_EPOCH,
+            "lr": TFT_LEARNING_RATE,
+            "device": DEFAULT_DEVICE,
+        }
+    else:
+        defaults = {
+            "asset": asset,
+            "model": model,
+            "epochs": DEEPAR_EPOCHS,
+            "prediction_length": DEEPAR_PREDICTION_LENGTH,
+            "context_length": DEEPAR_CONTEXT_LENGTH,
+            "batch_size": DEEPAR_BATCH_SIZE,
+            "num_batches_per_epoch": DEEPAR_NUM_BATCHES_PER_EPOCH,
+            "lr": DEEPAR_LEARNING_RATE,
+            "device": DEFAULT_DEVICE,
+        }
+    
+    if skip_modify:
+        config = defaults
+        print(f"Training Config: {', '.join([f'{k}={v}' for k, v in config.items()])}\n")
+    else:
+        config = set_training_defaults(defaults)
     
     train(
-        asset=args.asset,
-        prediction_length=args.prediction_length,
-        context_length=args.context_length,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        lr=args.lr,
-        device=args.device,
+        asset=config["asset"],
+        model=config.get("model", model),
+        prediction_length=config["prediction_length"],
+        context_length=config["context_length"],
+        num_batches_per_epoch=config["num_batches_per_epoch"],
+        epochs=config["epochs"],
+        batch_size=config["batch_size"],
+        lr=config["lr"],
+        device=config["device"],
     )

@@ -1,71 +1,74 @@
 """
-DeepAR model wrapper using GluonTS.
+Temporal Fusion Transformer (TFT) model wrapper using GluonTS.
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 import torch
-from gluonts.torch.model.deepar import DeepAREstimator
-from gluonts.torch.distributions import StudentTOutput
+from gluonts.torch.model.tft import TemporalFusionTransformerEstimator
 from lightning.pytorch.callbacks import ModelCheckpoint, TQDMProgressBar
 
 from core.training.constants import (
-    DEEPAR_NUM_LAYERS,
-    DEEPAR_HIDDEN_SIZE,
-    DEEPAR_DROPOUT_RATE,
-    DEEPAR_LEARNING_RATE,
-    DEEPAR_WEIGHT_DECAY,
-    DEEPAR_BATCH_SIZE,
-    DEEPAR_NUM_BATCHES_PER_EPOCH,
-    DEEPAR_EPOCHS,
-    DEEPAR_NUM_PARALLEL_SAMPLES,
+    TFT_NUM_HEADS,
+    TFT_HIDDEN_DIM,
+    TFT_VARIABLE_DIM,
+    TFT_DROPOUT_RATE,
+    TFT_LEARNING_RATE,
+    TFT_WEIGHT_DECAY,
+    TFT_BATCH_SIZE,
+    TFT_NUM_BATCHES_PER_EPOCH,
+    TFT_EPOCHS,
     DEFAULT_DEVICE,
 )
 
 
 class DetailedProgressBar(TQDMProgressBar):
-    """Custom progress bar that shows more stats and doesn't double-print."""
+    """Custom progress bar that shows batch totals."""
     
     def __init__(self, num_batches_per_epoch: int):
         super().__init__(refresh_rate=1)
         self.num_batches = num_batches_per_epoch
     
     def get_metrics(self, trainer, pl_module):
-        # Get default metrics and add custom ones
         items = super().get_metrics(trainer, pl_module)
-        # Remove redundant v_num
         items.pop("v_num", None)
         return items
     
     def init_train_tqdm(self):
         bar = super().init_train_tqdm()
         bar.total = self.num_batches
-        bar.bar_format = "{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]"
         return bar
 
 
-def create_deepar_estimator(
+def create_tft_estimator(
     prediction_length: int,
     freq: str = "1H",
     context_length: Optional[int] = None,
-    num_layers: int = DEEPAR_NUM_LAYERS,
-    hidden_size: int = DEEPAR_HIDDEN_SIZE,
-    dropout_rate: float = DEEPAR_DROPOUT_RATE,
-    lr: float = DEEPAR_LEARNING_RATE,
-    weight_decay: float = DEEPAR_WEIGHT_DECAY,
-    batch_size: int = DEEPAR_BATCH_SIZE,
-    num_batches_per_epoch: int = DEEPAR_NUM_BATCHES_PER_EPOCH,
-    epochs: int = DEEPAR_EPOCHS,
-    num_parallel_samples: int = DEEPAR_NUM_PARALLEL_SAMPLES,
+    num_heads: int = TFT_NUM_HEADS,
+    hidden_dim: int = TFT_HIDDEN_DIM,
+    variable_dim: int = TFT_VARIABLE_DIM,
+    dropout_rate: float = TFT_DROPOUT_RATE,
+    lr: float = TFT_LEARNING_RATE,
+    weight_decay: float = TFT_WEIGHT_DECAY,
+    batch_size: int = TFT_BATCH_SIZE,
+    num_batches_per_epoch: int = TFT_NUM_BATCHES_PER_EPOCH,
+    epochs: int = TFT_EPOCHS,
+    quantiles: Optional[List[float]] = None,
     device: str = DEFAULT_DEVICE,
     checkpoint_dir: Optional[Path] = None,
-) -> DeepAREstimator:
+) -> TemporalFusionTransformerEstimator:
     """
-    Create a configured DeepAREstimator with Student-t distribution.
+    Create a configured TFT Estimator.
+    
+    TFT uses attention mechanisms and can parallelize across time steps,
+    making it significantly faster to train than DeepAR on GPU.
     """
     if context_length is None:
         context_length = prediction_length
+    
+    if quantiles is None:
+        quantiles = [0.1, 0.25, 0.5, 0.75, 0.9]
     
     # Device selection
     if device == "auto":
@@ -80,7 +83,7 @@ def create_deepar_estimator(
     # Setup callbacks
     callbacks = []
     
-    # Custom progress bar with known total batches
+    # Progress bar
     progress_bar = DetailedProgressBar(num_batches_per_epoch=num_batches_per_epoch)
     callbacks.append(progress_bar)
     
@@ -89,7 +92,7 @@ def create_deepar_estimator(
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
         checkpoint_callback = ModelCheckpoint(
             dirpath=str(checkpoint_dir),
-            filename="deepar-{epoch:02d}-{train_loss:.4f}",
+            filename="tft-{epoch:02d}-{train_loss:.4f}",
             save_top_k=3,
             monitor="train_loss",
             mode="min",
@@ -100,33 +103,32 @@ def create_deepar_estimator(
         print(f"  Checkpoints: {checkpoint_dir}")
 
     # Trainer config
+    # NOTE: enable_checkpointing=False because we add our own ModelCheckpoint callback
+    # GluonTS would otherwise add a second one, causing a conflict
     trainer_kwargs = {
         "max_epochs": epochs,
         "accelerator": accelerator,
         "devices": 1,
         "enable_model_summary": True,
-        "enable_checkpointing": bool(checkpoint_dir),
+        "enable_checkpointing": False,  # We use our own callback
         "callbacks": callbacks,
         "enable_progress_bar": True,
-        # Log metrics every 10 batches for better visibility
         "log_every_n_steps": 10,
-        # Limit train batches to show total in progress bar
         "limit_train_batches": num_batches_per_epoch,
     }
     
-    return DeepAREstimator(
+    return TemporalFusionTransformerEstimator(
         freq=freq,
         prediction_length=prediction_length,
         context_length=context_length,
-        num_layers=num_layers,
-        hidden_size=hidden_size,
+        quantiles=quantiles,
+        num_heads=num_heads,
+        hidden_dim=hidden_dim,
+        variable_dim=variable_dim,
         dropout_rate=dropout_rate,
         lr=lr,
         weight_decay=weight_decay,
         batch_size=batch_size,
         num_batches_per_epoch=num_batches_per_epoch,
-        num_parallel_samples=num_parallel_samples,
-        distr_output=StudentTOutput(),
-        scaling=True,
         trainer_kwargs=trainer_kwargs,
     )

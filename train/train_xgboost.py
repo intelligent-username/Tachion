@@ -13,6 +13,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
 
 from .xg import InterestRateClassifier
+from core import set_training_defaults
 
 
 def load_data():
@@ -60,7 +61,13 @@ def time_aware_split(X, y, dates, test_size=0.2):
     return X_train, X_test, y_train, y_test, dates_train, dates_test
 
 
-def train():
+def train(
+    n_estimators=150,
+    max_depth=4,
+    learning_rate=0.08,
+    gamma_focal=2.0,
+    use_smote=True
+):
     """Main training function."""
     print("Loading data...")
     X, y, dates, feature_cols = load_data()
@@ -83,11 +90,11 @@ def train():
     # Train
     print("\nTraining XGBoost with Focal Loss...")
     model = InterestRateClassifier(
-        n_estimators=150,
-        max_depth=4,
-        learning_rate=0.08,
-        gamma_focal=2.0,
-        use_smote=True,
+        n_estimators=n_estimators,
+        max_depth=max_depth,
+        learning_rate=learning_rate,
+        gamma_focal=gamma_focal,
+        use_smote=use_smote,
         random_state=42
     )
     
@@ -119,4 +126,23 @@ def train():
 
 
 if __name__ == "__main__":
-    train()
+    
+    defaults = {
+        "asset": "interest",
+        "n_estimators": 150,
+        "max_depth": 4,
+        "learning_rate": 0.08,
+        "gamma_focal": 2.0,
+        "use_smote": True
+    }
+    
+    config = set_training_defaults(defaults)
+    
+    train(
+        n_estimators=config["n_estimators"],
+        max_depth=config["max_depth"],
+        learning_rate=config["learning_rate"],
+        gamma_focal=config["gamma_focal"],
+        use_smote=config["use_smote"]
+    )
+

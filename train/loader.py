@@ -30,7 +30,7 @@ ASSET_CONFIG = {
     "forex": {
         "freq": "1H",
         "target_col": "log_return",
-        "item_id_col": "pair",
+        "item_id_col": "symbol",
     },
     "comm": {
         "freq": "1D",
@@ -73,6 +73,9 @@ def load_parquet_as_dataframe(asset_type: str) -> pd.DataFrame:
     elif "date" in df.columns:
         df["date"] = pd.to_datetime(df["date"])
         df = df.set_index("date")
+    elif "timestamp" in df.columns:
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df = df.set_index("timestamp")
     
     return df
 
@@ -91,7 +94,8 @@ def load_gluonts_dataset(
     :param asset_type: Asset type to load
     :param prediction_length: Forecast horizon (also determines test hold-out)
     :param val_split: Fraction of data to use for validation
-    :return: Tuple of (train_dataset, test_dataset)
+    
+    Returns a tuple of (train_dataset, test_dataset)
     """
     config = ASSET_CONFIG.get(asset_type)
     if config is None:
@@ -174,7 +178,8 @@ def load_pandas_dataset(
     
     :param asset_type: Asset type to load
     :param prediction_length: Forecast horizon
-    :return: PandasDataset
+    
+    Returns a PandasDataset
     """
     config = ASSET_CONFIG.get(asset_type)
     if config is None:

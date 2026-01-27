@@ -22,7 +22,8 @@ def focal_loss_objective(preds, dtrain, gamma=2.0, alpha=None):
     :param dtrain: DMatrix with labels
     :param gamma: Focusing parameter (higher = more focus on hard examples)
     :param alpha: Class weights (optional), shape (n_classes,)
-    :return: grad, hess
+    
+    Returns grad, hess
     """
     labels = dtrain.get_label().astype(int)
     n_samples = len(labels)
@@ -150,7 +151,6 @@ class InterestRateClassifier(BaseEstimator, ClassifierMixin):
         
         :param X: Features array (n_samples, n_features)
         :param y: Labels - can be strings ('cut', 'hold', 'hike') or integers
-        :return: self
         """
         # Encode labels if strings
         if isinstance(y[0], str):
@@ -198,8 +198,7 @@ class InterestRateClassifier(BaseEstimator, ClassifierMixin):
         """
         Predict class probabilities.
         
-        :param X: Features array
-        :return: Probabilities (n_samples, 3)
+        X: Features array
         """
         dtest = xgb.DMatrix(X)
         raw_preds = self.model.predict(dtest)
@@ -215,8 +214,9 @@ class InterestRateClassifier(BaseEstimator, ClassifierMixin):
         """
         Predict class labels.
         
-        :param X: Features array
-        :return: Predicted labels (as original strings if fitted with strings)
+        X: Features array
+        
+        Returns: Predicted labels (as original strings if fitted with strings)
         """
         probs = self.predict_proba(X)
         pred_idx = np.argmax(probs, axis=1)

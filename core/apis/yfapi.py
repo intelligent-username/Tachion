@@ -14,10 +14,10 @@ def call_specific_yf(path, symbols, interval="1d", rate_limit=5):
     """
     Fetch YFinance data and write to JSON files.
 
-    :param path: Directory path to write JSON files to
-    :param symbols: List of ticker symbols (e.g., ["ZQ=F", "^TNX"])
-    :param interval: Data interval (1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo)
-    :param rate_limit: Maximum API calls per minute (default 5, be conservative)
+    path: Directory path to write JSON files to
+    symbols (list): List of ticker symbols (e.g., ["ZQ=F", "^TNX"])
+    interval (str): Data interval (1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo)
+    rate_limit (int): Maximum API calls per minute (default 5, be conservative)
     """
 
     # Rate limiting
@@ -116,13 +116,13 @@ def YFinanceAPI(symbol, start_date=None, end_date=None, interval="1d"):
     """
     Fetch historical data from Yahoo Finance using yfinance.
 
-    :param symbol: Ticker symbol (e.g., "ZQ=F", "^TNX", "AAPL")
-    :param start_date: Start date for data (datetime object)
-    :param end_date: End date for data (datetime object)
-    :param interval: Data interval (1d, 1wk, 1mo, etc.)
-                     Note: intraday data (1m, 5m, etc.) limited to last 60 days
+    symbol (str): Ticker symbol (e.g., "ZQ=F", "^TNX", "AAPL")
+    start_date (datetime): Start date for data (datetime object)
+    end_date (datetime): End date for data (datetime object)
+    interval (str): Data interval (1d, 1wk, 1mo, etc.)
+                   Note: intraday data (1m, 5m, etc.) limited to last 60 days
 
-    :return: Dict with "status" and "values" keys for consistency with other APIs.
+    Returns a Dict with "status" and "values" keys for consistency with other APIs.
              Each value contains: datetime, open, high, low, close, volume
     """
 

@@ -15,6 +15,12 @@ load_dotenv()
 def call_specific_td(path, symbols, num_calls, outputsize=5000, rate_limit=8):
     """
     Make Specific Calls to the TwelveData API
+    
+    path: Directory path to write JSON files to
+    symbols (list): List of symbols to fetch
+    num_calls (int): Number of API calls per symbol
+    outputsize (int): Expected size of each output (default 5000)
+    rate_limit (int): API calls per minute (default 8)
     """
 
     calls_this_minute = 0
@@ -173,18 +179,17 @@ def TwelveDataAPI(url="https://api.twelvedata.com/time_series",
                    start_date=None, end_date=None, apikey=None, symbol=None):
     
     """
-    :param url: TwelveData's Rest API Endpoint
-    :param interval: time interval. 
+    url (str): TwelveData's Rest API Endpoint
+    interval (str): time interval. 
             Must be one of the following values: 
                 1min, 5min, 15min, 30min, 1h, 4h, 1day, 1week, 1month
-    :param outputsize: How many data points to return. Maximum is 5000.
-    :param format: The format of the data returned.
-            Must be one of the following:
-                JSON, CSV
-                Pandas DataFrames can be created via the SDK
-    :param end_date: The end date for the data retrieval. Defaults to present date and time.
-    :param apikey: secret key. Do not touch. Will use environment variable TD_KEY.
-    :param symbol: The specific symbol to retrieve. MAKE SURE IT'S NOT BLANK.
+    outputsize (int): How many data points to return. Maximum is 5000.
+    format (str): The format of the data returned.
+            Must be one of the following: JSON, CSV
+    end_date (datetime): The end date for the data retrieval. Defaults to present date and time.
+    start_date (datetime): The start date for the data retrieval.
+    apikey (str): secret key. Will use environment variable TD_KEY.
+    symbol (str): The specific symbol to retrieve.
             For equities, just input the symbol
             For Crypto, input the symbol followed by slash and the currency (e.g., BTC/USD)
             For FOREX, input the currency pair separated by slash (e.g., EUR/USD)
@@ -192,7 +197,7 @@ def TwelveDataAPI(url="https://api.twelvedata.com/time_series",
             For Silver, input XAG/USD
             For Brent Crude (International) Oil, input XBR/USD 
     
-    :return: Response object from TwelveData API
+    Returns a Response object from TwelveData API
 
     """
     if end_date is None:

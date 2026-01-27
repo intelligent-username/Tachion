@@ -103,6 +103,6 @@ if __name__ == "__main__":
 
     pkg = __package__  # e.g., 'data.interest'
     raw_dir = Path(__file__).resolve().parent / "raw"
-    out_path = Path(__file__).resolve().parent / "processed" / "Interest_Features.parquet"
+    out_path = Path(__file__).resolve().parent / "processed" / "interest_processed.parquet"
 
     process_interest_features(raw_dir, out_path)

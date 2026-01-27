@@ -29,10 +29,10 @@ def call_specific_binance(path, symbols, num_calls, rate_limit=50):
     """
     Make Specific Calls to the Binance API
 
-    :param path: Directory path to write JSON files to
-    :param symbols: List of symbols to fetch (e.g., ["BTC", "ETH"])
-    :param num_calls: Number of API calls per symbol (each returns up to 1000 candles)
-    :param rate_limit: Maximum API calls per minute (default 50)
+    path: Directory path to write JSON files to
+    symbols (list): List of symbols to fetch (e.g., ["BTC", "ETH"])
+    num_calls (int): Number of API calls per symbol (each returns up to 1000 candles)
+    rate_limit (int): Maximum API calls per minute (default 50)
     """
 
     # Rate limiting: calls per minute max
@@ -180,19 +180,19 @@ def BinanceAPI(url="https://api.binance.com/api/v3/klines",
     """
     Make a call to the Binance Klines (Candlestick) API
 
-    :param url: Binance's REST API Endpoint for klines
-    :param interval: Time interval for candlesticks.
+    url (str): Binance's REST API Endpoint for klines
+    interval (str): Time interval for candlesticks.
             Must be one of the following values:
                 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M
-    :param limit: How many data points to return. Maximum is 1000.
-    :param start_time: Start time in milliseconds (Unix timestamp * 1000).
+    limit (int): How many data points to return. Maximum is 1000.
+    start_time (int): Start time in milliseconds (Unix timestamp * 1000).
             If not provided, returns most recent candles.
-    :param end_time: End time in milliseconds (Unix timestamp * 1000).
+    end_time (int): End time in milliseconds (Unix timestamp * 1000).
             Defaults to current time if not provided.
-    :param symbol: The trading pair symbol (e.g., "BTC" will be converted to "BTCUSDT").
+    symbol (str): The trading pair symbol (e.g., "BTC" will be converted to "BTCUSDT").
             For crypto, just input the base symbol (BTC, ETH, etc.)
 
-    :return: Dict with "status" and "values" keys, matching TwelveData format for consistency.
+    Returns a dict with "status" and "values" keys, matching TwelveData format for consistency.
             Each value contains: datetime, open, high, low, close, volume
     """
 

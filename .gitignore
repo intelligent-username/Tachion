@@ -17,11 +17,13 @@ test.py
 *.ipynb
 
 # Data files (might push to Kaggle or HuggingFace datasets later)
+models/
 *.json
 *.csv
 *.parquet
 
 # Raw files which are csv are downloaded by hand so they don't have a script
 
-# Directory metadata
+# Directory metadata & other stuff
 *.egg-info
+lightning_logs/
