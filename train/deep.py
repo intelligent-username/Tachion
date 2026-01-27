@@ -105,7 +105,7 @@ def create_deepar_estimator(
         "accelerator": accelerator,
         "devices": 1,
         "enable_model_summary": True,
-        "enable_checkpointing": bool(checkpoint_dir),
+        "enable_checkpointing": False,  # We use our own callback
         "callbacks": callbacks,
         "enable_progress_bar": True,
         # Log metrics every 10 batches for better visibility

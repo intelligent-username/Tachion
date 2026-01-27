@@ -15,30 +15,21 @@ def set_training_defaults(defaults: Dict[str, Any]) -> Dict[str, Any]:
     """
     config = defaults.copy()
     
-    # Arg validation
-    if len(sys.argv) > 3:
-        print("Error: Too many arguments.")
-        print("Usage: python -m train.train_deep [asset] [-n]")
-        sys.exit(1)
-        
     skip_modify = False
+    valid_assets = ["crypto", "equities", "forex", "comm", "interest"]
+    valid_models = ["deepar", "tft"]
     
-    # Handle asset and -n flag
-    if len(sys.argv) >= 2:
-        # First arg is asset
-        valid_assets = ["crypto", "equities", "forex", "comm", "interest"]
-        if sys.argv[1].lower() in valid_assets:
-            config["asset"] = sys.argv[1].lower()
-        else:
-            print(f"Warning: '{sys.argv[1]}' is not a recognized asset type.")
-            
-    if len(sys.argv) == 3:
-        if sys.argv[2].lower() == "-n":
+    # Parse CLI arguments
+    for arg in sys.argv[1:]:
+        arg_lower = arg.lower()
+        if arg_lower == "-n":
             skip_modify = True
-        else:
-            print(f"Error: Unrecognized argument '{sys.argv[2]}'. Use '-n' to skip modification.")
-            sys.exit(1)
-
+        elif arg_lower in valid_assets:
+            config["asset"] = arg_lower
+        elif arg_lower in valid_models:
+            config["model"] = arg_lower
+        # Skip unknown args silently (already warned in parse_args)
+    
     print(f"Training Config - Defaults: {', '.join([f'{k}={v}' for k, v in config.items()])}")
     
     if skip_modify:
