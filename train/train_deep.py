@@ -1,6 +1,8 @@
 """
 Train time series models (DeepAR or TFT) using GluonTS.
 
+Optimized for Linux/WSL with multi-worker data loading.
+
 Usage:
     python -m train.train_deep [asset] [model] [-n]
     
@@ -10,13 +12,22 @@ Examples:
 """
 
 from pathlib import Path
+import os
 import time
 import sys
 import traceback
 import torch
 
-# Optimize for Tensor Cores
 torch.set_float32_matmul_precision('medium')
+torch.backends.cudnn.benchmark = True
+os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+
+try:
+    import resource
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (min(65536, hard), hard))
+except (ImportError, ValueError):
+    pass  # Not on Linux or can't change limit
 
 from gluonts.evaluation import make_evaluation_predictions, Evaluator
 
@@ -124,14 +135,32 @@ def train(
             checkpoint_dir=checkpoint_dir,
         )
     
-    # Train
-    print(f"\nStarting training ({epochs} epochs, {num_batches_per_epoch} batches/epoch)...\n")
+    if torch.cuda.is_available():
+        print("\nWarming up GPU...")
+        torch.cuda.init()
+        warmup = torch.randn(1024, 1024, device='cuda')
+        _ = torch.matmul(warmup, warmup)
+        del warmup
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+        print(f"  GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
+    
+    num_workers = min(6, os.cpu_count() or 4)
+    
+    print(f"\nStarting training ({epochs} epochs, {num_batches_per_epoch} batches/epoch)...")
+    print(f"  DataLoader workers: {num_workers}")
+    print(f"  Prefetch factor: 2\n")
     train_start = time.time()
     predictor = None
     
     try:
-        # num_workers=0 avoids Windows multiprocessing spawn overhead
-        predictor = estimator.train(train_ds, num_workers=0)
+        # Linux: use multiple workers with prefetching for parallel data loading
+        predictor = estimator.train(
+            train_ds,
+            num_workers=num_workers,
+            prefetch_factor=2,
+            persistent_workers=True,
+        )
         
     except KeyboardInterrupt:
         print("\n\nTraining interrupted. No model saved.")

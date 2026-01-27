@@ -6,6 +6,7 @@ env/
 __pycache__/
 *.pyc
 **cache**
+tach/
 
 # VSCode and Jupyter waste
 *.ipynb_checkpoints*

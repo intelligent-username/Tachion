@@ -2,7 +2,7 @@
 Data loader for GluonTS training.
 
 Reads Parquet files and converts them to GluonTS-compatible datasets
-(PandasDataset/ListDataset format).
+with caching for fast multi-worker data loading.
 """
 
 from pathlib import Path
@@ -13,6 +13,13 @@ import numpy as np
 
 from gluonts.dataset.pandas import PandasDataset
 from gluonts.dataset.common import ListDataset
+
+# Try to import CachingDataset for in-memory caching
+try:
+    from gluonts.dataset.common import CachingDataset
+    HAS_CACHING = True
+except ImportError:
+    HAS_CACHING = False
 
 
 # Asset-specific configurations
@@ -147,22 +154,32 @@ def load_gluonts_dataset(
         if n < prediction_length * 2:
             continue
         
+        # Optimize: use contiguous float32 arrays for faster GPU transfer
+        full_target_opt = np.ascontiguousarray(full_target, dtype=np.float32)
+        train_target_opt = np.ascontiguousarray(full_target[:-prediction_length], dtype=np.float32)
+        
         # Test uses full series
         test_data.append({
-            "target": full_target,
+            "target": full_target_opt,
             "start": series["start"],
             "item_id": series["item_id"],
         })
         
         # Train removes the last prediction_length points
         train_data.append({
-            "target": full_target[:-prediction_length],
+            "target": train_target_opt,
             "start": series["start"],
             "item_id": series["item_id"],
         })
     
     train_ds = ListDataset(train_data, freq=freq)
     test_ds = ListDataset(test_data, freq=freq)
+    
+    # Wrap with CachingDataset if available - caches transformed data in memory
+    if HAS_CACHING:
+        train_ds = CachingDataset(train_ds)
+        test_ds = CachingDataset(test_ds)
+        print(f"  Dataset caching: ENABLED")
     
     return train_ds, test_ds
 
