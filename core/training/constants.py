@@ -29,17 +29,17 @@ DEEPAR_WEIGHT_DECAY = 1e-8
 TFT_PREDICTION_LENGTH = 24
 TFT_CONTEXT_LENGTH = 48
 TFT_NUM_HEADS = 4              # Attention heads
-TFT_HIDDEN_DIM = 64            # LSTM + transformer hidden size
+TFT_HIDDEN_DIM = 128           # LSTM + transformer hidden size
 TFT_VARIABLE_DIM = 32          # Feature embedding size
 TFT_DROPOUT_RATE = 0.1
 
 # =============================================================================
 # TFT Training
 # =============================================================================
-TFT_BATCH_SIZE = 256
+TFT_BATCH_SIZE = 512
 TFT_NUM_BATCHES_PER_EPOCH = 64
 TFT_EPOCHS = 20
-TFT_LEARNING_RATE = 0.001
+TFT_LEARNING_RATE = 0.005
 TFT_WEIGHT_DECAY = 1e-8
 
 # =============================================================================
@@ -48,3 +48,4 @@ TFT_WEIGHT_DECAY = 1e-8
 DEFAULT_DEVICE = "auto"
 DEFAULT_ASSET = "crypto"
 DEFAULT_MODEL = "tft"          # "deepar" or "tft"
+TRAIN_LOG_INTERVAL = 50        # Batches between progress print

@@ -233,3 +233,102 @@ def load_pandas_dataset(
             target=target_col,
             freq=freq,
         )
+
+
+
+# Pytorch TimeSeries forecasting's data loader
+
+try:
+    from pytorch_forecasting import TimeSeriesDataSet
+    from pytorch_forecasting.data import GroupNormalizer
+    HAS_PF = True
+except ImportError:
+    HAS_PF = False
+    TimeSeriesDataSet = None
+    GroupNormalizer = None
+
+
+def load_pf_dataset(
+    asset_type: str,
+    prediction_length: int = 24,
+    context_length: int = 48,
+) -> Tuple:
+    """
+    Load data as pytorch-forecasting TimeSeriesDataSet.
+    
+    This creates pre-tensorized datasets that are significantly faster
+    to train than GluonTS datasets.
+    
+    :param asset_type: Asset type to load
+    :param prediction_length: Forecast horizon
+    :param context_length: Encoder length (lookback window)
+    
+    Returns a tuple of (training_dataset, validation_dataset)
+    """
+    if not HAS_PF:
+        raise ImportError(
+            "pytorch-forecasting is not installed. "
+            "Install with: pip install pytorch-forecasting"
+        )
+    
+    config = ASSET_CONFIG.get(asset_type)
+    if config is None:
+        raise ValueError(f"Unknown asset type: {asset_type}")
+    
+    target_col = config["target_col"]
+    item_id_col = config.get("item_id_col", "symbol")
+    
+    # Use existing loader
+    df = load_parquet_as_dataframe(asset_type)
+    
+    # Clean data: replace infinity with NaN, then drop NaNs
+    df = df.replace([np.inf, -np.inf], np.nan)
+    df = df.dropna(subset=[target_col])
+    
+    # Prepare for TimeSeriesDataSet
+    df = df.reset_index()
+    df = df.rename(columns={df.columns[0]: "datetime"})
+    
+    # Add time index (required by pytorch-forecasting)
+    if item_id_col in df.columns:
+        df["time_idx"] = df.groupby(item_id_col).cumcount()
+    else:
+        df["time_idx"] = range(len(df))
+        df[item_id_col] = "main"
+    
+    # Training cutoff: leave room for validation
+    training_cutoff = df["time_idx"].max() - prediction_length
+    
+    print(f"  Samples: {len(df):,}")
+    print(f"  Series: {df[item_id_col].nunique()}")
+    
+    # Create training dataset
+    training = TimeSeriesDataSet(
+        df[df["time_idx"] <= training_cutoff],
+        time_idx="time_idx",
+        target=target_col,
+        group_ids=[item_id_col],
+        min_encoder_length=context_length // 2,
+        max_encoder_length=context_length,
+        min_prediction_length=1,
+        max_prediction_length=prediction_length,
+        static_categoricals=[item_id_col],
+        time_varying_known_reals=["time_idx"],
+        time_varying_unknown_reals=[target_col],
+        target_normalizer=GroupNormalizer(groups=[item_id_col]),
+        add_relative_time_idx=True,
+        add_target_scales=True,
+        add_encoder_length=True,
+        allow_missing_timesteps=True,
+    )
+    
+    # Validation dataset uses same params as training
+    validation = TimeSeriesDataSet.from_dataset(
+        training,
+        df,
+        predict=True,
+        stop_randomization=True,
+    )
+    
+    return training, validation
+

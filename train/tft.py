@@ -7,7 +7,9 @@ from typing import Optional, List
 
 import torch
 from gluonts.torch.model.tft import TemporalFusionTransformerEstimator
-from lightning.pytorch.callbacks import ModelCheckpoint, TQDMProgressBar
+from lightning.pytorch.callbacks import ModelCheckpoint
+
+from core.training.progress import CleanProgressBar
 
 from core.training.constants import (
     TFT_NUM_HEADS,
@@ -21,24 +23,6 @@ from core.training.constants import (
     TFT_EPOCHS,
     DEFAULT_DEVICE,
 )
-
-
-class DetailedProgressBar(TQDMProgressBar):
-    """Custom progress bar that shows batch totals."""
-    
-    def __init__(self, num_batches_per_epoch: int):
-        super().__init__(refresh_rate=1)
-        self.num_batches = num_batches_per_epoch
-    
-    def get_metrics(self, trainer, pl_module):
-        items = super().get_metrics(trainer, pl_module)
-        items.pop("v_num", None)
-        return items
-    
-    def init_train_tqdm(self):
-        bar = super().init_train_tqdm()
-        bar.total = self.num_batches
-        return bar
 
 
 def create_tft_estimator(
@@ -80,11 +64,7 @@ def create_tft_estimator(
         accelerator = "gpu" if device.startswith("cuda") else "cpu"
         print(f"  Device: {accelerator.upper()} (Forced)")
 
-    callbacks = []
-    
-    # Progress bar
-    progress_bar = DetailedProgressBar(num_batches_per_epoch=num_batches_per_epoch)
-    callbacks.append(progress_bar)
+    callbacks = [CleanProgressBar()]
     
     # Set checkpoint root directory
     checkpoint_root = str(checkpoint_dir.parent) if checkpoint_dir else None

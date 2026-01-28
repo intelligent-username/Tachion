@@ -1,14 +1,17 @@
 """
-Train time series models (DeepAR or TFT) using GluonTS.
+Train time series models using GluonTS or pytorch-forecasting.
 
-Optimized for Linux/WSL with multi-worker data loading.
+Models:
+    deepar - GluonTS DeepAR (LSTM-based)
+    tft    - GluonTS TFT (slow, research-grade)
+    tft2   - pytorch-forecasting TFT (fast, production-grade)
 
 Usage:
     python -m train.train_deep [asset] [model] [-n]
     
 Examples:
-    python -m train.train_deep crypto tft -n    # Train TFT on crypto
-    python -m train.train_deep forex deepar -n  # Train DeepAR on forex
+    python -m train.train_deep crypto tft2 -n   # Fast TFT on crypto
+    python -m train.train_deep forex deepar -n  # DeepAR on forex
 """
 
 from pathlib import Path
@@ -17,6 +20,7 @@ import time
 import sys
 import traceback
 import torch
+import numpy as np
 
 torch.set_float32_matmul_precision('medium')
 torch.backends.cudnn.benchmark = True
@@ -33,7 +37,8 @@ from gluonts.evaluation import make_evaluation_predictions, Evaluator
 
 from .deep import create_deepar_estimator
 from .tft import create_tft_estimator
-from .loader import load_gluonts_dataset, get_asset_freq
+from .tft_pf import create_tft_pf_model, create_trainer, TFTPFPredictor
+from .loader import load_gluonts_dataset, load_pf_dataset, get_asset_freq
 from core import set_training_defaults, save_predictor
 from core.training.constants import (
     # DeepAR
@@ -46,6 +51,7 @@ from core.training.constants import (
     # TFT
     TFT_PREDICTION_LENGTH,
     TFT_CONTEXT_LENGTH,
+    TFT_HIDDEN_DIM,
     TFT_BATCH_SIZE,
     TFT_NUM_BATCHES_PER_EPOCH,
     TFT_EPOCHS,
@@ -71,7 +77,7 @@ def train(
     """Train a time series model for specified asset type."""
     
     # Set model-specific defaults
-    if model == "tft":
+    if model in ("tft", "tft2"):
         prediction_length = prediction_length or TFT_PREDICTION_LENGTH
         context_length = context_length or TFT_CONTEXT_LENGTH
         batch_size = batch_size or TFT_BATCH_SIZE
@@ -86,7 +92,8 @@ def train(
         epochs = epochs or DEEPAR_EPOCHS
         lr = lr or DEEPAR_LEARNING_RATE
     
-    model_name = "TFT" if model == "tft" else "DeepAR"
+    model_names = {"tft": "TFT (GluonTS)", "tft2": "TFT (pytorch-forecasting)", "deepar": "DeepAR"}
+    model_name = model_names.get(model, model)
     
     print(f"\n{'='*60}")
     print(f"  Training {model_name} for {asset.upper()}")
@@ -101,7 +108,80 @@ def train(
     # Get frequency for this asset type
     freq = get_asset_freq(asset)
     
-    # Load data
+    # =========================================================================
+    # TFT2: pytorch-forecasting (fast, pre-tensorized)
+    # =========================================================================
+    if model == "tft2":
+        print("\nLoading data for pytorch-forecasting...")
+        
+        # Use existing loader with pytorch-forecasting support
+        training_ds, validation_ds = load_pf_dataset(
+            asset_type=asset,
+            prediction_length=prediction_length,
+            context_length=context_length,
+        )
+        
+        # Create dataloaders (use a few workers since data is in memory)
+        train_loader = training_ds.to_dataloader(
+            train=True,
+            batch_size=batch_size,
+            num_workers=2,
+            pin_memory=True,
+            persistent_workers=True,
+        )
+        val_loader = validation_ds.to_dataloader(
+            train=False,
+            batch_size=batch_size * 2,
+            num_workers=2,
+            pin_memory=True,
+            persistent_workers=True,
+        )
+        
+        # Create model and trainer
+        tft_model = create_tft_pf_model(
+            training_ds,
+            hidden_size=TFT_HIDDEN_DIM,
+            lr=lr,
+        )
+        
+        trainer = create_trainer(
+            epochs=epochs,
+            device=device,
+            checkpoint_dir=checkpoint_dir,
+        )
+        
+        print(f"\nModel parameters: {sum(p.numel() for p in tft_model.parameters()):,}")
+        
+        if torch.cuda.is_available():
+            print(f"GPU: {torch.cuda.get_device_name(0)}")
+            print(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
+        
+        print(f"\nStarting training ({epochs} epochs)...\n")
+        train_start = time.time()
+        
+        try:
+            trainer.fit(tft_model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+        except KeyboardInterrupt:
+            print("\n\nTraining interrupted. Saving current model state...")
+            # Fall through to save logic
+        except Exception as e:
+            print(f"\n\nTraining failed: {e}")
+            print(traceback.format_exc())
+            sys.exit(1)
+        
+        train_time = time.time() - train_start
+        print(f"\nTraining complete! ({train_time/60:.2f} min)")
+        
+        # Create predictor wrapper and save
+        predictor = TFTPFPredictor(tft_model, training_ds)
+        predictor.save(final_model_dir)
+        print(f"\nModel saved to: {final_model_dir}")
+        
+        return predictor, {}
+    
+    # =========================================================================
+    # GluonTS models (tft, deepar)
+    # =========================================================================
     print("\nLoading data...")
     train_ds, test_ds = load_gluonts_dataset(
         asset_type=asset,
@@ -160,6 +240,7 @@ def train(
             num_workers=num_workers,
             prefetch_factor=2,
             persistent_workers=True,
+            pin_memory=True,
         )
         
     except KeyboardInterrupt:
@@ -202,7 +283,7 @@ def parse_args():
     skip_modify = False
     
     valid_assets = ["crypto", "equities", "forex", "comm", "interest"]
-    valid_models = ["deepar", "tft"]
+    valid_models = ["deepar", "tft", "tft2"]
     
     args = sys.argv[1:]
     
@@ -223,7 +304,7 @@ if __name__ == "__main__":
     asset, model, skip_modify = parse_args()
     
     # Use model-specific defaults
-    if model == "tft":
+    if model in ("tft", "tft2"):
         defaults = {
             "asset": asset,
             "model": model,
@@ -235,7 +316,7 @@ if __name__ == "__main__":
             "lr": TFT_LEARNING_RATE,
             "device": DEFAULT_DEVICE,
         }
-    else:
+    else:  # deepar
         defaults = {
             "asset": asset,
             "model": model,

@@ -33,13 +33,15 @@ Loads `data/interest/processed/Interest_Features.parquet` and trains a classifie
 
 ```bash
 # Train TFT on crypto
-python -m train.train_deep crypto tft
+python -m train.train_deep forex tft
 
 # Train DeepAR on equities
-python -m train.train_deep equities deepar
+python -m train.train_deep crypto deepar
 
 # Options: crypto, equities, forex, comm
 ```
+
+You can add a `-n` or `-y` at the end of each command to speed up the configuration prompting.
 
 Model saved to `models/deepar_{asset}.pt`.
 

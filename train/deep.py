@@ -8,7 +8,9 @@ from typing import Optional
 import torch
 from gluonts.torch.model.deepar import DeepAREstimator
 from gluonts.torch.distributions import StudentTOutput
-from lightning.pytorch.callbacks import ModelCheckpoint, TQDMProgressBar
+from lightning.pytorch.callbacks import ModelCheckpoint
+
+from core.training.progress import CleanProgressBar
 
 from core.training.constants import (
     DEEPAR_NUM_LAYERS,
@@ -22,27 +24,6 @@ from core.training.constants import (
     DEEPAR_NUM_PARALLEL_SAMPLES,
     DEFAULT_DEVICE,
 )
-
-
-class DetailedProgressBar(TQDMProgressBar):
-    """Custom progress bar that shows more stats and doesn't double-print."""
-    
-    def __init__(self, num_batches_per_epoch: int):
-        super().__init__(refresh_rate=1)
-        self.num_batches = num_batches_per_epoch
-    
-    def get_metrics(self, trainer, pl_module):
-        # Get default metrics and add custom ones
-        items = super().get_metrics(trainer, pl_module)
-        # Remove redundant v_num
-        items.pop("v_num", None)
-        return items
-    
-    def init_train_tqdm(self):
-        bar = super().init_train_tqdm()
-        bar.total = self.num_batches
-        bar.bar_format = "{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]"
-        return bar
 
 
 def create_deepar_estimator(
@@ -77,11 +58,7 @@ def create_deepar_estimator(
         accelerator = "gpu" if device.startswith("cuda") else "cpu"
         print(f"  Device: {accelerator.upper()} (Forced)")
 
-    callbacks = []
-
-    # Progress printing    
-    progress_bar = DetailedProgressBar(num_batches_per_epoch=num_batches_per_epoch)
-    callbacks.append(progress_bar)
+    callbacks = [CleanProgressBar()]
     
     checkpoint_root = str(checkpoint_dir.parent) if checkpoint_dir else None
     if checkpoint_dir:
