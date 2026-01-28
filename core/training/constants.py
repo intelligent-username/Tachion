@@ -47,5 +47,5 @@ TFT_WEIGHT_DECAY = 1e-8
 # =============================================================================
 DEFAULT_DEVICE = "auto"
 DEFAULT_ASSET = "crypto"
-DEFAULT_MODEL = "tft"          # "deepar" or "tft"
+DEFAULT_MODEL = "tft"          # "deepar" or "tft" (tft is slower than tft2 since it's the native GluonTS implementation, tft2 uses the PyTorch implementation, which strays from the research version but is optimized to be trained faster.)
 TRAIN_LOG_INTERVAL = 50        # Batches between progress print

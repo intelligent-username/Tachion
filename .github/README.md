@@ -17,7 +17,7 @@
 4. [File Structure](#file-structure)
 5. [Attributions](#attributions)
 6. [Contributing](#contributing)
-7. [License](#license)
+7. [License](#license)  
 
 ---
 
@@ -148,7 +148,7 @@ pytest
 To run the backend, execute:
 
 ```bash
-uvicorn api.predict:app --reload
+uvicorn api.main:app --reload
 ```
 
 3.Send a POST request to `/predict` with your data and desired horizon.
@@ -182,7 +182,8 @@ Tachion/
 │   │   ├── oaapi.py        # OANDA API
 │   │   ├── tdapi.py        # TwelveData API
 │   │   └── yfapi.py        # yfinance API (Yahoo Finance)
-│   └── processor/          # Data processing utilities
+│   ├── processor/          # Data processing utilities
+│   └── training/           # Training configs (constants, loaders)
 |
 ├── data/                   # Data collection & engineer
 │   ├── comm/               # Commodities (gold, silver, oil)
@@ -192,8 +193,8 @@ Tachion/
 │   └── interest/           # Interest rate iddicators
 |
 ├── frontend/
-│   ├── components/         # UI: footer, graphing, etc.
-│   └── js/                 # Actual JS logic
+│   ├── components/         # React components
+│   └── js/                 # Logic hooks
 │
 ├── test/                   # Testing utils (core)
 │
@@ -224,7 +225,9 @@ Salinas et. al, "DeepAR: Probabilistic Forecasting with Autoregressive Recurrent
 
 GluonTS, Amazon's official DeepAR library (implementation), which I took lots of inspiration from:
 
-[https://github.com/awslabs/gluonts](https://github.com/awslabs/gluonts)
+[https://github.com/awslabs/gluonts](https://github.com/awslabs/gluonts).
+
+Documentation: [can be found here](https://ts.gluon.ai/stable/api/gluonts/gluonts.torch.model.deepar.html).
 
 ## Contributing
 

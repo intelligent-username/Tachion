@@ -180,7 +180,7 @@ def train(
         return predictor, {}
     
     # =========================================================================
-    # GluonTS models (tft, deepar)
+    # GluonTS models (TFT & DeepAR)
     # =========================================================================
     print("\nLoading data...")
     train_ds, test_ds = load_gluonts_dataset(

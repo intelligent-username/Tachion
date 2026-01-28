@@ -21,6 +21,7 @@ from core.training.constants import (
     TFT_LEARNING_RATE,
     TFT_EPOCHS,
     DEFAULT_DEVICE,
+    TRAIN_LOG_INTERVAL,
 )
 from core.training.progress import CleanProgressBar
 
@@ -99,6 +100,7 @@ def create_trainer(
         log_every_n_steps=50,
         enable_progress_bar=False,
         logger=False,
+        val_check_interval=TRAIN_LOG_INTERVAL,  # Run validation every N batches
     )
     
     return trainer

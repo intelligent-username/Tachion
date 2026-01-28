@@ -7,6 +7,7 @@ import time
 from lightning.pytorch.callbacks import Callback
 from core.training.constants import TRAIN_LOG_INTERVAL
 
+HOLD_WIDTH = 128
 
 class CleanProgressBar(Callback):
     """Clean progress bar with box-drawing characters."""
@@ -18,47 +19,60 @@ class CleanProgressBar(Callback):
         self.start_time = 0
         self.last_print_time = 0
     
+    
     def on_train_start(self, trainer, pl_module):
         self.max_epochs = trainer.max_epochs
-        print("\n┌" + "─" * 64 + "┐")
+        self.ema_loss = None
+        self.alpha = 0.1  # Smoothing factor
+        print("\n┌" + "─" * HOLD_WIDTH + "┐")
     
     def on_train_epoch_start(self, trainer, pl_module):
         self.epoch = trainer.current_epoch + 1
-        self.start_time = time.time()
-        self.last_print_time = self.start_time
+        self.start_time = time.time()  # FIX: Initialize timer
     
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
         total = trainer.num_training_batches
         step = batch_idx + 1
         
-        if step % TRAIN_LOG_INTERVAL != 0 and step != total:
-            return
-
+        # Update EMA loss
+        current_loss = float(outputs.get("loss", 0))
+        if self.ema_loss is None:
+            self.ema_loss = current_loss
+        else:
+            self.ema_loss = self.alpha * current_loss + (1 - self.alpha) * self.ema_loss
+        
         pct = step / total if total else 0
         filled = int(self.width * pct)
         bar = "█" * filled + "░" * (self.width - filled)
         
+        # Calculate speed
         now = time.time()
         elapsed = now - self.start_time
-        avg_time_per_step = elapsed / step if step > 0 else 0
-        remaining_steps = total - step
-        eta_seconds = remaining_steps * avg_time_per_step
-        eta_str = time.strftime("%M:%S", time.gmtime(eta_seconds))
+        speed = step / elapsed if elapsed > 0 else 0.0
         
-        loss = outputs.get("loss", 0)
         val_loss = trainer.callback_metrics.get("val_loss", 0)
         
-        metrics = f"L: {float(loss):.4f} V: {float(val_loss):.4f}"
+        metrics = f"{speed:.1f}it/s | L: {current_loss:.4f} EMA: {self.ema_loss:.4f} V: {float(val_loss):.4f}"
         
-        sys.stdout.write(f"\r│ Ep {self.epoch}/{self.max_epochs} {bar} {pct*100:3.0f}% │ {metrics} │ ETA: {eta_str} │")
+        # Pad to overwrite full line
+        output = f"\r│ Ep {self.epoch}/{self.max_epochs} {bar} {pct*100:3.0f}% │ {metrics} │"
+        sys.stdout.write(output.ljust(HOLD_WIDTH + 10))
         sys.stdout.flush()
     
     def on_validation_end(self, trainer, pl_module):
-        # Print summary at end of validation (at end of epoch)
+        
+        total_batches = trainer.num_training_batches
+        current_batch = trainer.global_step % total_batches if total_batches > 0 else 0
+        
+        # If we're NOT at the end (allow some simple margin for last batch), just return
+        # PL sometimes runs val slightly before the absolute last batch index
+        if total_batches - current_batch > 2:
+            return
+
         loss = trainer.callback_metrics.get("train_loss_epoch", 0)
         val = trainer.callback_metrics.get("val_loss", 0)
         
-        sys.stdout.write("\r" + " " * 80 + "\r")
+        sys.stdout.write("\r" + " " * 100 + "\r")
         sys.stdout.flush()
         
         bar = "█" * self.width
@@ -66,7 +80,7 @@ class CleanProgressBar(Callback):
         
         # Epoch separator
         if self.epoch < self.max_epochs:
-            print("├" + "─" * 64 + "┤")
+            print("├" + "─" * HOLD_WIDTH + "┤")
     
     def on_train_end(self, trainer, pl_module):
-        print("└" + "─" * 64 + "┘\n")
+        print("└" + "─" * HOLD_WIDTH + "┘\n")
