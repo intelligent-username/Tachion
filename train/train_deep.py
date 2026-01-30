@@ -301,18 +301,18 @@ def parse_args():
 
 
 if __name__ == "__main__":
-    asset, model, skip_modify = parse_args()
+    asset, model, skip_modify, override_epochs, override_batches = parse_args()
     
     # Use model-specific defaults
     if model in ("tft", "tft2"):
         defaults = {
             "asset": asset,
             "model": model,
-            "epochs": TFT_EPOCHS,
+            "epochs": override_epochs or TFT_EPOCHS,
             "prediction_length": TFT_PREDICTION_LENGTH,
             "context_length": TFT_CONTEXT_LENGTH,
             "batch_size": TFT_BATCH_SIZE,
-            "num_batches_per_epoch": TFT_NUM_BATCHES_PER_EPOCH,
+            "num_batches_per_epoch": override_batches or TFT_NUM_BATCHES_PER_EPOCH,
             "lr": TFT_LEARNING_RATE,
             "device": DEFAULT_DEVICE,
         }
@@ -320,11 +320,11 @@ if __name__ == "__main__":
         defaults = {
             "asset": asset,
             "model": model,
-            "epochs": DEEPAR_EPOCHS,
+            "epochs": override_epochs or DEEPAR_EPOCHS,
             "prediction_length": DEEPAR_PREDICTION_LENGTH,
             "context_length": DEEPAR_CONTEXT_LENGTH,
             "batch_size": DEEPAR_BATCH_SIZE,
-            "num_batches_per_epoch": DEEPAR_NUM_BATCHES_PER_EPOCH,
+            "num_batches_per_epoch": override_batches or DEEPAR_NUM_BATCHES_PER_EPOCH,
             "lr": DEEPAR_LEARNING_RATE,
             "device": DEFAULT_DEVICE,
         }
@@ -346,3 +346,4 @@ if __name__ == "__main__":
         lr=config["lr"],
         device=config["device"],
     )
+

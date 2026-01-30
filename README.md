@@ -65,101 +65,41 @@ See [this writeup](https://github.com/intelligent-username/Classification) for m
 
 The chief way to use Tachion is to go to [tachion.varak.dev](https://tachion.varak.dev) and use the hosted version.
 
-However, if you want to run it locally, follow the instructions below.
+### Running Locally
 
-### Installation
+To run the project locally, follow the brief instructions below. For detailed configuration and architecture, please refer to the READMEs in the respective subdirectories.
 
-First, clone the repository:
-
+#### 1. Backend (API)
+Powered by FastAPI. Handles model inference and data serving.
 ```bash
-git clone https://github.com/intelligent-username/tachion.git
-```
-
-### Dependencies
-
-#### Using Conda
-
-```bash
-conda create -n tachion python=3.11 -y  # the -y auto-approves prompts
-conda activate tachion
-conda install pip
-pip install -r requirements.txt
-```
-
-#### Using Python / pip
-
-```bash
-python -m venv tach
-source tach/bin/activate  # macOS/Linux
-tach\Scripts\activate     # Windows
-pip install -r requirements.txt
-# Make the project into a package
-pip install -e .
-```
-
-### Environment Setup
-
-Create a `.env` file in the project root with the following API keys:
-
-```bash
-# TwelveData API (for equities)
-TD_KEY=your_twelvedata_api_key
-
-# OANDA API (for forex)
-OANDA_KEY=your_oanda_api_token
-OANDA_ACCOUNT_ID=your_oanda_account_id
-```
-
-- Get a TwelveData API key at [twelvedata.com](https://twelvedata.com)
-- Get OANDA credentials at [oanda.com](https://www.oanda.com) (practice account works)
-- Binance API (for crypto) requires no authentication
-
-#### Data Collection
-
-(Optional, could just run the models and not collect data to re-train them)
-
-Collect historical market data using the provided collectors:
-
-```bash
-# Collect equity data (~5 years, 30-min intervals)
-python -m data.equities.collector
-
-# Collect cryptocurrency data (~5 years, 30-min intervals)
-python -m data.crypto.collector
-
-# Collect forex data (~10 years, 30-min intervals)
-python -m data.forex.collector
-```
-
-Data is saved as JSON files in `data/{asset_class}/raw/`.
-
-#### Testing
-
-(Optional, if you clone this repo you can assume everything works as expected).
-
-To run the test suite, navigate to the project root and execute:
-
-```bash
-pytest
-```
-
-#### Backend
-
-To run the backend, execute:
-
-```bash
+# From project root
 uvicorn api.main:app --reload
 ```
+*See [api/README.md](./api/README.md) for endpoint details.*
 
-3.Send a POST request to `/predict` with your data and desired horizon.
+#### 2. Frontend
+Built with React, Vite, and Bun.
+```bash
+# From project root
+cd frontend
+bun install
+bun dev
+```
+*See [frontend/README.md](./frontend/README.md) for UI structure.*
 
-4.Visualize predictions and prediction intervals through the integrated frontend.
+#### 3. Training
+Scripts for retraining models on processed data.
+```bash
+# From project root (using the 'tachion' venv)
 
-If tweaking any of the internals of the project, make sure to first read the provided `.md` (markdown) files in the folder you're working in to understand the corresponding specifications.
+# Train DeepAR/TFT (e.g., DeepAR on Forex)
+python -m train.train_deep forex deepar -n
 
-For a better understanding of how the project is structured, have a look at the file structure below.
+# Train XGBoost (Interest Rates)
+python -m train.train_xgboost
+```
+*See [train/README.md](./train/README.md) for model arguments and options.*
 
-Once the frontend is finalized, instructions for the frontend will be added as well
 
 ## File Structure
 
