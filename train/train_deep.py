@@ -173,7 +173,7 @@ def train(
         print(f"\nTraining complete! ({train_time/60:.2f} min)")
         
         # Create predictor wrapper and save
-        predictor = TFTPFPredictor(tft_model, training_ds)
+        predictor = TFTPFPredictor(tft_model, training_ds, asset)
         predictor.save(final_model_dir)
         print(f"\nModel saved to: {final_model_dir}")
         

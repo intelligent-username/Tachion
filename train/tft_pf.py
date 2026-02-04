@@ -111,11 +111,12 @@ class TFTPFPredictor:
     Predictor wrapper to match GluonTS predictor interface.
     """
     
-    def __init__(self, model: TemporalFusionTransformer, training_dataset: TimeSeriesDataSet):
+    def __init__(self, model: TemporalFusionTransformer, training_dataset: TimeSeriesDataSet, asset_type: str):
         self.model = model
         self.training_dataset = training_dataset
         self.prediction_length = training_dataset.max_prediction_length
         self.quantiles = model.loss.quantiles
+        self.asset_type = asset_type
     
     def predict(self, dataloader) -> dict:
         """
@@ -123,20 +124,33 @@ class TFTPFPredictor:
         
         Returns dict with 'mean', 'lower', 'upper' arrays.
         """
-        # Get predictions
-        predictions = self.model.predict(dataloader, return_x=False)
+        # Get predictions - mode="quantiles" returns shape (batch, horizon, num_quantiles)
+        predictions = self.model.predict(dataloader, return_x=False, mode="quantiles")
         
-        # Extract quantiles (assume 0.025, 0.5, 0.975 for 95% CI)
-        q_idx_lower = 0  # 2.5%
-        q_idx_median = len(self.quantiles) // 2  # 50%
-        q_idx_upper = -1  # 97.5%
-        
-        return {
-            "mean": predictions[:, :, q_idx_median].numpy(),
-            "lower": predictions[:, :, q_idx_lower].numpy(),
-            "upper": predictions[:, :, q_idx_upper].numpy(),
-            "all_quantiles": predictions.numpy(),
-        }
+        # Handle different tensor shapes
+        if predictions.dim() == 2:
+            # Shape: (batch, horizon) - point predictions only
+            pred_np = predictions.cpu().numpy()
+            return {
+                "mean": pred_np,
+                "lower": pred_np,
+                "upper": pred_np,
+                "all_quantiles": pred_np,
+            }
+        elif predictions.dim() == 3:
+            # Shape: (batch, horizon, num_quantiles)
+            q_idx_lower = 0  # 2.5%
+            q_idx_median = len(self.quantiles) // 2  # 50%
+            q_idx_upper = -1  # 97.5%
+            
+            return {
+                "mean": predictions[:, :, q_idx_median].cpu().numpy(),
+                "lower": predictions[:, :, q_idx_lower].cpu().numpy(),
+                "upper": predictions[:, :, q_idx_upper].cpu().numpy(),
+                "all_quantiles": predictions.cpu().numpy(),
+            }
+        else:
+            raise ValueError(f"Unexpected prediction shape: {predictions.shape}")
     
     def save(self, path: Path):
         """Save model checkpoint."""
@@ -145,15 +159,15 @@ class TFTPFPredictor:
         torch.save({
             "model_state_dict": self.model.state_dict(),
             "model_hparams": self.model.hparams,
-        }, path / "model.pt")
+        }, path / f"{self.asset_type}_model.pt")
     
     @classmethod
-    def load(cls, path: Path, training_dataset: TimeSeriesDataSet):
+    def load(cls, path: Path, training_dataset: TimeSeriesDataSet, asset_type: str):
         """Load model from checkpoint."""
-        checkpoint = torch.load(path / "model.pt")
+        checkpoint = torch.load(path / f"{asset_type}_model.pt")
         model = TemporalFusionTransformer.from_dataset(
             training_dataset,
             **checkpoint["model_hparams"],
         )
         model.load_state_dict(checkpoint["model_state_dict"])
-        return cls(model, training_dataset)
+        return cls(model, training_dataset, asset_type)
