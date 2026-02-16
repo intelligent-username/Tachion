@@ -12,13 +12,13 @@ from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
 
-from .xg import InterestRateClassifier
+from train.definitions.xg import InterestRateClassifier
 from core import set_training_defaults
 
 
 def load_data():
     """Load and prepare interest rate features."""
-    data_path = Path(__file__).resolve().parents[1] / "data" / "interest" / "processed" / "Interest_Features.parquet"
+    data_path = Path(__file__).resolve().parents[2] / "data" / "interest" / "processed" / "Interest_Features.parquet"
     
     if not data_path.exists():
         raise FileNotFoundError(
@@ -115,7 +115,7 @@ def train(
     print(f"\nMacro F1 Score: {f1_macro:.4f}")
     
     # Save model
-    models_dir = Path(__file__).resolve().parents[1] / "models"
+    models_dir = Path(__file__).resolve().parents[2] / "models"
     models_dir.mkdir(exist_ok=True)
     
     model_path = models_dir / "interest_rate_classifier.json"

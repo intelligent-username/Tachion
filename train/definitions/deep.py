@@ -77,6 +77,7 @@ def create_deepar_estimator(
         "log_every_n_steps": 10,
         "limit_train_batches": num_batches_per_epoch,
         "default_root_dir": checkpoint_root,
+        "val_check_interval": 65,  # Validate frequently (approx 60x/epoch)
     }
     
     return DeepAREstimator(
@@ -93,5 +94,9 @@ def create_deepar_estimator(
         num_parallel_samples=num_parallel_samples,
         distr_output=StudentTOutput(),
         scaling=True,
+        # Enable features
+        use_feat_dynamic_real=True,
+        use_feat_static_cat=True, 
+        cardinality=[1], # Placeholder if we used static cat, but we use dynamic
         trainer_kwargs=trainer_kwargs,
     )

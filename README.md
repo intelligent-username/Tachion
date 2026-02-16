@@ -1,6 +1,6 @@
 # Tachion
 
-![Python 3.11](https://img.shields.io/badge/python-3.11-blue)
+![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 ![License](https://img.shields.io/badge/license-Non--Commercial-red)
 
 ![Logo](imgs/Logo.svg)
@@ -9,11 +9,13 @@
 
 1. [Features](#features)
 2. [Prediction Mechanism](#prediction-mechanism)
+   - [DeepAR Explained](#deepar-explained)
+   - [XGBoost Explained](#xgboost-explained)
 3. [Usage](#usage)
-   - [Installation](#installation)
-   - [Dependencies](#dependencies)
-   - [Environment Setup](#environment-setup)
-   - [Data Collection](#data-collection)
+   - [Running Locally](#running-locally)
+     - [1. Backend (API)](#1-backend-api)
+     - [2. Frontend](#2-frontend)
+     - [3. Training](#3-training)
 4. [File Structure](#file-structure)
 5. [Attributions](#attributions)
 6. [Contributing](#contributing)
@@ -65,41 +67,54 @@ See [this writeup](https://github.com/intelligent-username/Classification) for m
 
 The chief way to use Tachion is to go to [tachion.varak.dev](https://tachion.varak.dev) and use the hosted version.
 
+Run `pytest` in the main directory to ensure tests pass and everything works.
+
 ### Running Locally
 
 To run the project locally, follow the brief instructions below. For detailed configuration and architecture, please refer to the READMEs in the respective subdirectories.
 
 #### 1. Backend (API)
+
 Powered by FastAPI. Handles model inference and data serving.
+
 ```bash
 # From project root
 uvicorn api.main:app --reload
 ```
+
 *See [api/README.md](./api/README.md) for endpoint details.*
 
 #### 2. Frontend
+
 Built with React, Vite, and Bun.
+
 ```bash
 # From project root
 cd frontend
 bun install
 bun dev
 ```
+
 *See [frontend/README.md](./frontend/README.md) for UI structure.*
 
 #### 3. Training
+
 Scripts for retraining models on processed data.
+
 ```bash
 # From project root (using the 'tachion' venv)
 
 # Train DeepAR/TFT (e.g., DeepAR on Forex)
-python -m train.train_deep forex deepar -n
+python -m train.loops.train_deep forex deepar -n
 
 # Train XGBoost (Interest Rates)
-python -m train.train_xgboost
-```
-*See [train/README.md](./train/README.md) for model arguments and options.*
+python -m train.loops.train_xgboost
 
+# Evaluate a model
+python -m train.eval.evaluate crypto tft2
+```
+
+*See [train/README.md](./train/README.md) for model arguments and options.*
 
 ## File Structure
 
@@ -129,16 +144,20 @@ Tachion/
 │   ├── comm/               # Commodities (gold, silver, oil)
 │   ├── crypto/
 │   ├── equities/
-│   ├── forex/              # Currencies
-│   └── interest/           # Interest rate iddicators
+│   ├── forex/              # Currency Exchange
+│   └── interest/           # Interest rate indicators
 |
 ├── frontend/
 │   ├── components/         # React components
-│   └── js/                 # Logic hooks
+│   └── js/                 # Logic
 │
-├── test/                   # Testing utils (core)
+├── test/                   # pytest
 │
-└── train/                  # Model definitions & training loop
+└── train/                  # Model training & evaluation
+    ├── definitions/        # Model definitions (DeepAR, TFT, XGBoost)
+    ├── eval/               # Evaluation scripts
+    ├── load/               # Data loaders
+    └── loops/              # Training loop scripts
 ```
 
 ## Attributions

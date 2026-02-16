@@ -2,22 +2,33 @@
 Evaluate trained time series models.
 
 Usage:
-    python -m train.evaluate [asset] [model]
+    python -m train.eval.evaluate [asset] [model]
     
 Examples:
-    python -m train.evaluate crypto tft2
-    python -m train.evaluate forex deepar
+    python -m train.eval.evaluate crypto tft2
+    python -m train.eval.evaluate forex deepar
 """
 
 from pathlib import Path
 import sys
+import warnings
 import numpy as np
 import torch
 
+# Suppress noisy warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
+warnings.filterwarnings("ignore", message=".*InconsistentVersionWarning.*")
+warnings.filterwarnings("ignore", message=".*tensorboardX.*")
+warnings.filterwarnings("ignore", message=".*Attribute.*is an instance of.*")
+warnings.filterwarnings("ignore", message=".*Consider setting.*persistent_workers.*")
+
+# Use Tensor Cores efficiently on supported GPUs
+torch.set_float32_matmul_precision("medium")
+
 from gluonts.evaluation import make_evaluation_predictions, Evaluator
 
-from .loader import load_gluonts_dataset, load_pf_dataset, get_asset_freq, ASSET_CONFIG
-from .tft_pf import TFTPFPredictor
+from train.load.loader import load_gluonts_dataset, load_pf_dataset, get_asset_freq, ASSET_CONFIG
+from train.definitions.tft_pf import TFTPFPredictor
 from core import load_predictor
 from core.training.constants import (
     TFT_PREDICTION_LENGTH,
@@ -38,7 +49,7 @@ def evaluate_gluonts_model(
     
     Returns dict with metrics including directional accuracy.
     """
-    models_dir = Path(__file__).resolve().parents[1] / "models"
+    models_dir = Path(__file__).resolve().parents[2] / "models"
     model_dir = models_dir / f"{model_type}_{asset}"
     
     if not model_dir.exists():
@@ -106,7 +117,7 @@ def evaluate_tft2_model(
     
     Returns dict with metrics including directional accuracy.
     """
-    models_dir = Path(__file__).resolve().parents[1] / "models"
+    models_dir = Path(__file__).resolve().parents[2] / "models"
     model_dir = models_dir / f"tft2_{asset}"
     model_path = model_dir / f"{asset}_model.pt"
     
@@ -127,21 +138,25 @@ def evaluate_tft2_model(
     val_loader = validation_ds.to_dataloader(
         train=False,
         batch_size=64,
-        num_workers=2,
+        num_workers=3,
+        persistent_workers=True,
     )
     
     print("Generating predictions...")
-    predictions = predictor.predict(val_loader)
+    # predict() returns a Prediction named tuple with fields:
+    # (output, x, index, decoder_lengths, y)
+    result = predictor.model.predict(
+        val_loader, return_x=True, mode="prediction"
+    )
     
-    # Get actuals from the validation dataset
-    # We need to iterate through to get actual targets
-    actuals_list = []
-    for batch in val_loader:
-        x, y = batch
-        actuals_list.append(y[0].numpy())  # y is (target, weight)
+    predicted = result.output.cpu().numpy()
     
-    actuals = np.concatenate(actuals_list, axis=0)
-    predicted = predictions["mean"]
+    # Inverse-transform actuals: original = normalized * scale + center
+    decoder_target = result.x["decoder_target"]    # normalized targets
+    target_scale = result.x["target_scale"]        # (center, scale) per sample
+    center = target_scale[:, 0:1]                  # shape (batch, 1)
+    scale = target_scale[:, 1:2]                   # shape (batch, 1)
+    actuals = (decoder_target * scale + center).cpu().numpy()
     
     # Ensure shapes match
     min_len = min(len(actuals), len(predicted))

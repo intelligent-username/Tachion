@@ -25,24 +25,48 @@ except ImportError:
 # Asset-specific configurations
 ASSET_CONFIG = {
     "crypto": {
-        "freq": "1H",
+        "freq": "1h",
         "target_col": "log_return",
-        "item_id_col": "symbol",  # If available
+        "item_id_col": "symbol",
+        # Lagged covariates (unknown in the future)
+        "unknown_reals": [
+            "volume_change",
+            "5_period_MA",
+            "20_period_MA",
+            "rolling_volatility_5",
+            "rolling_volatility_20",
+        ],
+        "known_reals": [],
+        "known_categoricals": [
+            "hour_of_day",
+            "day_of_week",
+            "day_of_month",
+            "is_weekend",
+        ],
     },
     "equities": {
         "freq": "1D",
         "target_col": "log_return",
         "item_id_col": "symbol",
+        "unknown_reals": [],
+        "known_reals": [],
+        "known_categoricals": [],
     },
     "forex": {
-        "freq": "1H",
+        "freq": "1h",
         "target_col": "log_return",
         "item_id_col": "symbol",
+        "unknown_reals": [],
+        "known_reals": [],
+        "known_categoricals": [],
     },
     "comm": {
         "freq": "1D",
         "target_col": "log_return",
         "item_id_col": "symbol",
+        "unknown_reals": [],
+        "known_reals": [],
+        "known_categoricals": [],
     },
 }
 
@@ -56,7 +80,7 @@ def get_asset_freq(asset_type: str) -> str:
 
 def get_asset_path(asset_type: str) -> Path:
     """Find the processed parquet file for a given asset type."""
-    data_dir = Path(__file__).resolve().parents[1] / "data" / asset_type / "processed"
+    data_dir = Path(__file__).resolve().parents[2] / "data" / asset_type / "processed"
     
     if not data_dir.exists():
         raise FileNotFoundError(f"Processed data directory not found: {data_dir}")
@@ -116,9 +140,41 @@ def load_gluonts_dataset(
     # Drop NaN in target
     df = df.dropna(subset=[target_col])
     
+    # Feature columns
+    unknown_reals = [c for c in config.get("unknown_reals", []) if c in df.columns]
+    known_reals = [c for c in config.get("known_reals", []) if c in df.columns]
+    known_categoricals = [c for c in config.get("known_categoricals", []) if c in df.columns]
+
+    # Pre-encode categoricals efficiently
+    cat_maps = {}
+    for c in known_categoricals:
+        df[c] = df[c].astype('category')
+        cat_maps[c] = df[c].cat.codes.values
+
+    
     # Get unique series if we have multiple (e.g., multiple symbols)
     item_id_col = config.get("item_id_col")
     
+    # Helper to extract features for a group
+    def extract_features(group_df):
+        # Known features (future known): reals + encoded categoricals
+        # Shape: (num_features, length)
+        feat_dynamic_real = []
+        for c in known_reals:
+            feat_dynamic_real.append(group_df[c].values)
+        for c in known_categoricals:
+            # We already have codes in cat_maps, but need to index by the group's index
+            # Actually easier to just use the group's values since we converted to category
+            feat_dynamic_real.append(group_df[c].cat.codes.values.astype(np.float32))
+        
+        # Unknown features (past known only): reals
+        # Shape: (num_features, length)
+        past_feat_dynamic_real = []
+        for c in unknown_reals:
+            past_feat_dynamic_real.append(group_df[c].values)
+            
+        return np.array(feat_dynamic_real, dtype=np.float32), np.array(past_feat_dynamic_real, dtype=np.float32)
+
     if item_id_col and item_id_col in df.columns:
         # Multiple time series
         series_list = []
@@ -126,21 +182,33 @@ def load_gluonts_dataset(
             group = group.sort_index()
             target = group[target_col].values
             start = group.index[0]
-            series_list.append({
+            
+            fdr, pfdr = extract_features(group)
+            
+            entry = {
                 "target": target,
                 "start": pd.Period(start, freq=freq),
                 "item_id": str(item_id),
-            })
+            }
+            if fdr.size > 0: entry["feat_dynamic_real"] = fdr
+            if pfdr.size > 0: entry["past_feat_dynamic_real"] = pfdr
+            series_list.append(entry)
     else:
         # Single time series
         df = df.sort_index()
         target = df[target_col].values
         start = df.index[0]
-        series_list = [{
+        
+        fdr, pfdr = extract_features(df)
+        
+        entry = {
             "target": target,
             "start": pd.Period(start, freq=freq),
             "item_id": "main",
-        }]
+        }
+        if fdr.size > 0: entry["feat_dynamic_real"] = fdr
+        if pfdr.size > 0: entry["past_feat_dynamic_real"] = pfdr
+        series_list.append(entry)
     
     # Split: train has last prediction_length removed from each series
     train_data = []
@@ -166,11 +234,33 @@ def load_gluonts_dataset(
         })
         
         # Train removes the last prediction_length points
-        train_data.append({
+        # Slice features for train
+        train_entry = {
             "target": train_target_opt,
             "start": series["start"],
             "item_id": series["item_id"],
-        })
+        }
+        test_entry = {
+            "target": full_target_opt,
+            "start": series["start"],
+            "item_id": series["item_id"],
+        }
+        
+        if "feat_dynamic_real" in series:
+            fdr = series["feat_dynamic_real"]
+            test_entry["feat_dynamic_real"] = fdr
+            # Train needs full future features (if known)? Usually standard DeepAR uses future known features
+            # But the 'target' is cut short. The features should match the target length + prediction_length?
+            # Actually standard practice: provide full features, cut target.
+            train_entry["feat_dynamic_real"] = fdr[:, :-prediction_length] # Cut to match target length for now to be safe
+            
+        if "past_feat_dynamic_real" in series:
+            pfdr = series["past_feat_dynamic_real"]
+            test_entry["past_feat_dynamic_real"] = pfdr
+            train_entry["past_feat_dynamic_real"] = pfdr[:, :-prediction_length]
+
+        test_data.append(test_entry)
+        train_data.append(train_entry)
     
     train_ds = ListDataset(train_data, freq=freq)
     test_ds = ListDataset(test_data, freq=freq)
@@ -281,9 +371,16 @@ def load_pf_dataset(
     # Use existing loader
     df = load_parquet_as_dataframe(asset_type)
     
-    # Clean data: replace infinity with NaN, then drop NaNs
+    # Clean data: replace infinity with NaN, then drop rows with NaN in any used column
+    all_feature_cols = [target_col] + config.get("unknown_reals", []) + config.get("known_reals", []) + config.get("known_categoricals", [])
+    all_feature_cols = [c for c in all_feature_cols if c in df.columns]
+
+    # Cast floats to float32 to save memory
+    float_cols = df.select_dtypes(include=['float64']).columns
+    df[float_cols] = df[float_cols].astype('float32')
+    
     df = df.replace([np.inf, -np.inf], np.nan)
-    df = df.dropna(subset=[target_col])
+    df = df.dropna(subset=all_feature_cols)
     
     # Prepare for TimeSeriesDataSet
     df = df.reset_index()
@@ -302,6 +399,24 @@ def load_pf_dataset(
     print(f"  Samples: {len(df):,}")
     print(f"  Series: {df[item_id_col].nunique()}")
     
+    # Determine which feature columns actually exist in the data
+    unknown_reals = [c for c in config.get("unknown_reals", []) if c in df.columns]
+    known_reals = [c for c in config.get("known_reals", []) if c in df.columns]
+    known_categoricals = [c for c in config.get("known_categoricals", []) if c in df.columns]
+    
+    # Convert categoricals to strings (required for embeddings)
+    for c in known_categoricals:
+        df[c] = df[c].astype(str)
+    
+    # Target is always an unknown real
+    all_unknown = [target_col] + unknown_reals
+    # time_idx is always a known real
+    all_known = ["time_idx"] + known_reals
+    
+    print(f"  Unknown reals: {all_unknown}")
+    print(f"  Known reals: {all_known}")
+    print(f"  Known categoricals: {known_categoricals}")
+    
     # Create training dataset
     training = TimeSeriesDataSet(
         df[df["time_idx"] <= training_cutoff],
@@ -313,8 +428,9 @@ def load_pf_dataset(
         min_prediction_length=1,
         max_prediction_length=prediction_length,
         static_categoricals=[item_id_col],
-        time_varying_known_reals=["time_idx"],
-        time_varying_unknown_reals=[target_col],
+        time_varying_known_reals=all_known,
+        time_varying_unknown_reals=all_unknown,
+        time_varying_known_categoricals=known_categoricals,
         target_normalizer=GroupNormalizer(groups=[item_id_col]),
         add_relative_time_idx=True,
         add_target_scales=True,

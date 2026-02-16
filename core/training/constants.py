@@ -38,8 +38,8 @@ TFT_DROPOUT_RATE = 0.1
 # =============================================================================
 TFT_BATCH_SIZE = 512
 TFT_NUM_BATCHES_PER_EPOCH = 64
-TFT_EPOCHS = 20
-TFT_LEARNING_RATE = 0.005
+TFT_EPOCHS = 50
+TFT_LEARNING_RATE = 0.1
 TFT_WEIGHT_DECAY = 1e-8
 
 # =============================================================================

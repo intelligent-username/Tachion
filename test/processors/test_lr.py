@@ -142,10 +142,9 @@ class TestVolumeChange:
     def test_zero_volume_handling(self):
         """Test handling of zero volume (produces -inf)"""
         volumes = pd.Series([1000, 0, 500])
-        
-        with pytest.warns(RuntimeWarning, match="divide by zero encountered in log"):
-            result = volume_change(volumes)
-        
+
+        result = volume_change(volumes)
+
         # log(0/1000) = -inf
         assert result.iloc[1] == -np.inf
         # log(500/0) = inf

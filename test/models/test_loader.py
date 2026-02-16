@@ -1,22 +1,30 @@
 
 import torch
-from train.loader import make_dataloader
+from train.load.loader import load_pf_dataset, load_gluonts_dataset
 import pandas as pd
 from pathlib import Path
 import os
 
-def test_loader_dry_run():
-    # Attempt to create a dataloader for crypto
-    # If no data exists, it should raise a FileNotFoundError which we'll catch
+def test_loader_pf_dry_run():
+    """Test pytorch-forecasting dataset loading."""
     try:
-        loader = make_dataloader("crypto", batch_size=32)
-        print("Dataloader created successfully.")
+        training_ds, validation_ds = load_pf_dataset("crypto", prediction_length=24, context_length=48)
+        print(f"PF datasets created: train={len(training_ds)}, val={len(validation_ds)}")
         
-        # Try to get one batch if possible
-        # for x, y in loader:
-        #     print(f"Batch X shape: {x.shape}")
-        #     print(f"Batch y shape: {y.shape}")
-        #     break
+        # Create a dataloader from the dataset
+        loader = training_ds.to_dataloader(train=True, batch_size=32)
+        print("Dataloader created successfully.")
+    except FileNotFoundError as e:
+        print(f"Skipping actual load: {e}")
+    except Exception as e:
+        print(f"Error: {e}")
+        raise
+
+def test_loader_gluonts_dry_run():
+    """Test GluonTS dataset loading."""
+    try:
+        train_ds, test_ds = load_gluonts_dataset("crypto", prediction_length=24)
+        print(f"GluonTS datasets created successfully.")
     except FileNotFoundError as e:
         print(f"Skipping actual load: {e}")
     except Exception as e:
@@ -24,4 +32,5 @@ def test_loader_dry_run():
         raise
 
 if __name__ == "__main__":
-    test_loader_dry_run()
+    test_loader_pf_dry_run()
+    test_loader_gluonts_dry_run()

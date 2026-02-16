@@ -7,11 +7,11 @@ Models:
     tft2   - pytorch-forecasting TFT (fast, production-grade)
 
 Usage:
-    python -m train.train_deep [asset] [model] [-n]
+    python -m train.loops.train_deep [asset] [model] [-n]
     
 Examples:
-    python -m train.train_deep crypto tft2 -n   # Fast TFT on crypto
-    python -m train.train_deep forex deepar -n  # DeepAR on forex
+    python -m train.loops.train_deep crypto tft2 -n   # Fast TFT on crypto
+    python -m train.loops.train_deep forex deepar -n  # DeepAR on forex
 """
 
 from pathlib import Path
@@ -35,10 +35,10 @@ except (ImportError, ValueError):
 
 from gluonts.evaluation import make_evaluation_predictions, Evaluator
 
-from .deep import create_deepar_estimator
-from .tft import create_tft_estimator
-from .tft_pf import create_tft_pf_model, create_trainer, TFTPFPredictor
-from .loader import load_gluonts_dataset, load_pf_dataset, get_asset_freq
+from train.definitions.deep import create_deepar_estimator
+from train.definitions.tft import create_tft_estimator
+from train.definitions.tft_pf import create_tft_pf_model, create_trainer, TFTPFPredictor
+from train.load.loader import load_gluonts_dataset, load_pf_dataset, get_asset_freq
 from core import set_training_defaults, save_predictor
 from core.training.constants import (
     # DeepAR
@@ -100,7 +100,7 @@ def train(
     print(f"{'='*60}")
     
     # Setup paths
-    models_dir = Path(__file__).resolve().parents[1] / "models"
+    models_dir = Path(__file__).resolve().parents[2] / "models"
     models_dir.mkdir(parents=True, exist_ok=True)
     final_model_dir = models_dir / f"{model}_{asset}"
     checkpoint_dir = models_dir / f"{model}_{asset}_checkpoints"
@@ -125,14 +125,14 @@ def train(
         train_loader = training_ds.to_dataloader(
             train=True,
             batch_size=batch_size,
-            num_workers=2,
+            num_workers=3,
             pin_memory=True,
             persistent_workers=True,
         )
         val_loader = validation_ds.to_dataloader(
             train=False,
             batch_size=batch_size * 2,
-            num_workers=2,
+            num_workers=3,
             pin_memory=True,
             persistent_workers=True,
         )
@@ -301,18 +301,18 @@ def parse_args():
 
 
 if __name__ == "__main__":
-    asset, model, skip_modify, override_epochs, override_batches = parse_args()
+    asset, model, skip_modify = parse_args()
     
     # Use model-specific defaults
     if model in ("tft", "tft2"):
         defaults = {
             "asset": asset,
             "model": model,
-            "epochs": override_epochs or TFT_EPOCHS,
+            "epochs": TFT_EPOCHS,
             "prediction_length": TFT_PREDICTION_LENGTH,
             "context_length": TFT_CONTEXT_LENGTH,
             "batch_size": TFT_BATCH_SIZE,
-            "num_batches_per_epoch": override_batches or TFT_NUM_BATCHES_PER_EPOCH,
+            "num_batches_per_epoch": TFT_NUM_BATCHES_PER_EPOCH,
             "lr": TFT_LEARNING_RATE,
             "device": DEFAULT_DEVICE,
         }
@@ -320,11 +320,11 @@ if __name__ == "__main__":
         defaults = {
             "asset": asset,
             "model": model,
-            "epochs": override_epochs or DEEPAR_EPOCHS,
+            "epochs": DEEPAR_EPOCHS,
             "prediction_length": DEEPAR_PREDICTION_LENGTH,
             "context_length": DEEPAR_CONTEXT_LENGTH,
             "batch_size": DEEPAR_BATCH_SIZE,
-            "num_batches_per_epoch": override_batches or DEEPAR_NUM_BATCHES_PER_EPOCH,
+            "num_batches_per_epoch": DEEPAR_NUM_BATCHES_PER_EPOCH,
             "lr": DEEPAR_LEARNING_RATE,
             "device": DEFAULT_DEVICE,
         }

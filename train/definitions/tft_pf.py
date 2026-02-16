@@ -59,7 +59,7 @@ def create_trainer(
     epochs: int = TFT_EPOCHS,
     device: str = DEFAULT_DEVICE,
     checkpoint_dir: Optional[Path] = None,
-    gradient_clip_val: float = 0.1,
+    gradient_clip_val: float = 0.5,
 ) -> pl.Trainer:
     """
     Create a PyTorch Lightning trainer for TFT.
@@ -74,7 +74,7 @@ def create_trainer(
     
     callbacks = [
         CleanProgressBar(),
-        EarlyStopping(monitor="val_loss", patience=5, mode="min"),
+        EarlyStopping(monitor="val_loss", patience=10, mode="min"),
     ]
     
     if checkpoint_dir:
@@ -99,8 +99,8 @@ def create_trainer(
         enable_model_summary=False,
         log_every_n_steps=50,
         enable_progress_bar=False,
-        logger=False,
-        val_check_interval=TRAIN_LOG_INTERVAL,  # Run validation every N batches
+        logger=True,
+        val_check_interval=65,
     )
     
     return trainer
@@ -164,7 +164,7 @@ class TFTPFPredictor:
     @classmethod
     def load(cls, path: Path, training_dataset: TimeSeriesDataSet, asset_type: str):
         """Load model from checkpoint."""
-        checkpoint = torch.load(path / f"{asset_type}_model.pt")
+        checkpoint = torch.load(path / f"{asset_type}_model.pt", weights_only=False)
         model = TemporalFusionTransformer.from_dataset(
             training_dataset,
             **checkpoint["model_hparams"],

@@ -1,2 +1,2 @@
 # Test package
-# Not needed for pytest btw
+# Not needed for running pytest btw

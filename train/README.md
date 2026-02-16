@@ -8,15 +8,26 @@ Note that the predictions for commodities won't be as strong, as they're affecte
 
 ## File Structure
 
-This folder contains the following important files:
-
 ```bash
-├── loader.py         # Data loader (GluonTS compatible)
-├── deep.py           # DeepAR model definition
-├── tft.py            # TFT model definition
-├── xg.py             # XGBoost classifier
-├── train_deep.py     # Script for training DeepAR/TFT models
-└── train_xgboost.py  # Script for training XGBoost interest rate classifier
+train/
+├── __init__.py
+├── README.md
+│
+├── definitions/              # Model definitions
+│   ├── deep.py               # DeepAR model (GluonTS)
+│   ├── tft.py                # TFT model (GluonTS)
+│   ├── tft_pf.py             # TFT model (pytorch-forecasting)
+│   └── xg.py                 # XGBoost interest rate classifier
+│
+├── eval/                     # Model evaluation
+│   └── series.py             # For TIME SERIES models
+│
+├── load/                     # Data loading
+│   └── loader.py             # GluonTS & pytorch-forecasting loaders
+│
+└── loops/                    # Training loops
+    ├── train_deep.py         # DeepAR / TFT training script
+    └── train_xgboost.py      # XGBoost training script
 ```
 
 ## Usage
@@ -24,7 +35,7 @@ This folder contains the following important files:
 ### Training XGBoost (Interest Rates)
 
 ```bash
-python -m train.train_xgboost
+python -m train.loops.train_xgboost
 ```
 
 Loads `data/interest/processed/Interest_Features.parquet` and trains a classifier.
@@ -32,18 +43,28 @@ Loads `data/interest/processed/Interest_Features.parquet` and trains a classifie
 ### Training DeepAR / TFT (Time Series)
 
 ```bash
-# Train TFT on crypto
-python -m train.train_deep forex tft
+# Train TFT (pytorch-forecasting) on crypto
+python -m train.loops.train_deep crypto tft2 -n
 
 # Train DeepAR on equities
-python -m train.train_deep crypto deepar
+python -m train.loops.train_deep equities deepar -n
 
 # Options: crypto, equities, forex, comm
 ```
 
 You can add a `-n` or `-y` at the end of each command to speed up the configuration prompting.
 
-Model saved to `models/deepar_{asset}.pt`.
+Model saved to `models/{model}_{asset}/`.
+
+### Evaluating a Model
+
+```bash
+# Evaluate TFT on crypto
+python -m train.eval.evaluate crypto tft2
+
+# Evaluate DeepAR on forex
+python -m train.eval.evaluate forex deepar
+```
 
 ## Miscellaneous Notes
 

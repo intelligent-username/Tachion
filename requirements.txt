@@ -2,28 +2,29 @@
 # See the README for installation instructions.
 
 # Backend
-fastapi==0.104.1
+fastapi==0.129.0
 
 # Models
 
 --extra-index-url https://download.pytorch.org/whl/cu121
-torch==2.2.0+cu121
+torch==2.5.1+cu121
+pytorch-forecasting==1.6.1
+gluonts[torch]==0.16.2
 
-xgboost==2.1.4
-gluonts[torch]==0.16.1
-scikit-learn==1.3.2
-imbalanced-learn==0.11.0
-orjson==3.9.10
-rich>=13.0.0
+xgboost==3.2.0
+scikit-learn==1.8.0
+imbalanced-learn==0.14.1
+orjson==3.11.7
+rich==14.3.2
 
 # Data Handling
-pandas==2.1.4
-pyarrow==14.0.0
-openpyxl==3.1.0
+pandas==2.3.3
+pyarrow==23.0.0
+openpyxl==3.1.5
 
 # API
-fredapi==0.5.1
-yfinance==0.2.54
+fredapi==0.5.2
+yfinance==1.1.0
 
 # Don't need, but might if I rewrite calls: 
 # twelve-data
@@ -31,14 +32,14 @@ yfinance==0.2.54
 # oandapyV20
 
 # Testing
-pytest==7.4.4
+pytest==9.0.2
 
 # Not directly used but just for compatibility
-numpy==1.26.4
+numpy==2.1.3
 
 # Misc
-python-dotenv==1.0.0
+python-dotenv==1.2.1
 
 # Jupyter notebooks (.ipynb, which are ignored in pushes) files (project doesn't need this but I do)
-ipykernel==6.31.0
-notebook==7.1.0
+ipykernel==7.2.0
+notebook==7.5.3

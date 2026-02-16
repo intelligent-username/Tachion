@@ -85,6 +85,7 @@ def create_tft_estimator(
         "log_every_n_steps": 10,
         "limit_train_batches": num_batches_per_epoch,
         "default_root_dir": checkpoint_root,
+        "val_check_interval": 65,
     }
     
     return TemporalFusionTransformerEstimator(
