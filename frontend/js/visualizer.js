@@ -78,6 +78,51 @@ function clampCandlesByTimespan(candles, timespan) {
     return clamped.length > 1 ? clamped : sorted.slice(-2)
 }
 
+function clampRowsByTimespan(rows, timespan) {
+    if (!rows?.length || !timespan || timespan === 'max') return rows ?? []
+
+    // Find a usable end time from the back of the array.
+    let end = null
+    for (let i = rows.length - 1; i >= 0; i--) {
+        const dt = parseDateLike(rows[i]?.timestamp ?? rows[i]?.datetime ?? rows[i]?.date ?? rows[i]?.time ?? rows[i]?.t)
+        if (dt) { end = dt; break }
+    }
+    if (!end) return rows
+
+    let start = null
+    if (timespan === 'ytd') {
+        start = new Date(end.getFullYear(), 0, 1)
+    } else {
+        const hourMatch = String(timespan).match(/^(\d+)h$/i)
+        const dayMatch = String(timespan).match(/^(\d+)d$/)
+        const monthMatch = String(timespan).match(/^(\d+)m$/i)
+        const yearMatch = String(timespan).match(/^(\d+)y$/i)
+
+        if (hourMatch) {
+            start = new Date(end)
+            start.setHours(start.getHours() - Number(hourMatch[1]))
+        } else if (dayMatch) {
+            start = new Date(end)
+            start.setDate(start.getDate() - Number(dayMatch[1]))
+        } else if (monthMatch) {
+            start = new Date(end)
+            start.setMonth(start.getMonth() - Number(monthMatch[1]))
+        } else if (yearMatch) {
+            start = new Date(end)
+            start.setFullYear(start.getFullYear() - Number(yearMatch[1]))
+        }
+    }
+
+    if (!start) return rows
+
+    const clamped = rows.filter(r => {
+        const dt = parseDateLike(r?.timestamp ?? r?.datetime ?? r?.date ?? r?.time ?? r?.t)
+        return dt && dt >= start && dt <= end
+    })
+
+    return clamped.length > 1 ? clamped : rows.slice(-2)
+}
+
 function computeAdaptiveMovingAverage(values, windowSize) {
     if (!values.length) return []
     const out = new Array(values.length)
@@ -96,7 +141,7 @@ function computeAdaptiveMovingAverage(values, windowSize) {
     return out
 }
 
-export class TachionChart {
+export class TChart {
     constructor(container) {
         this.container = container
         this.margin = { top: 18, right: 18, bottom: 26, left: 54 }
@@ -145,6 +190,28 @@ export class TachionChart {
             .attr('stroke', 'rgba(114, 137, 218, 0.95)')
             .attr('stroke-width', 1.5)
             .attr('stroke-dasharray', '3,3')
+            .attr('opacity', 0)
+
+        this.predictionBand = this.overlayLayer.append('path')
+            .attr('class', 'prediction-band')
+            .attr('fill', 'rgba(67, 78, 117, 0.1)')
+            .attr('stroke', 'none')
+            .attr('opacity', 0)
+
+        this.predictionUpper = this.overlayLayer.append('path')
+            .attr('class', 'prediction-upper')
+            .attr('fill', 'none')
+            .attr('stroke', 'rgba(37, 119, 115, 0.45)')
+            .attr('stroke-width', 1)
+            .attr('stroke-dasharray', '2,2')
+            .attr('opacity', 0)
+
+        this.predictionLower = this.overlayLayer.append('path')
+            .attr('class', 'prediction-lower')
+            .attr('fill', 'none')
+            .attr('stroke', 'rgba(146, 81, 28, 0.45)')
+            .attr('stroke-width', 1)
+            .attr('stroke-dasharray', '2,2')
             .attr('opacity', 0)
 
         this.movingAverageLine = this.overlayLayer.append('path')
@@ -206,8 +273,9 @@ export class TachionChart {
 
     // Render historical candles from backend OHLCV (30m expected)
     renderHistory(data, timespan = 'max', showMovingAverage = false) {
+        const rawRows = clampRowsByTimespan(data ?? [], timespan)
         let previousClose = null
-        const normalized = (data ?? [])
+        const normalized = rawRows
             .map(row => {
                 const candle = normalizeCandle(row, previousClose)
                 if (candle) previousClose = candle.close
@@ -229,6 +297,9 @@ export class TachionChart {
             this.xAxis.selectAll('*').remove()
             this.yAxis.selectAll('*').remove()
             this.predictionLine.attr('opacity', 0)
+            this.predictionBand.attr('opacity', 0)
+            this.predictionUpper.attr('opacity', 0)
+            this.predictionLower.attr('opacity', 0)
             return
         }
 
@@ -241,9 +312,26 @@ export class TachionChart {
         const spanMs = this.baseDates.length > 1
             ? this.baseDates[this.baseDates.length - 1] - this.baseDates[0]
             : 0
-        this.xLabelFormat = spanMs <= (2 * 24 * 60 * 60 * 1000)
-            ? d3.timeFormat('%b %d %H:%M')
-            : d3.timeFormat('%b %d')
+        const DAY = 24 * 60 * 60 * 1000
+        const showTime = spanMs <= 14 * DAY
+        const mayShowYear = spanMs > 7 * DAY
+
+        const latestYear = this.baseDates.length
+            ? this.baseDates[this.baseDates.length - 1].getFullYear()
+            : new Date().getFullYear()
+
+        this._xTickFormatter = (dt) => {
+            if (!dt) return ''
+            const crossesYear = mayShowYear && dt.getFullYear() !== latestYear
+            if (showTime) {
+                return crossesYear
+                    ? d3.timeFormat('%b %d %Y %H:%M')(dt)
+                    : d3.timeFormat('%b %d %H:%M')(dt)
+            }
+            return crossesYear
+                ? d3.timeFormat('%b %d %Y')(dt)
+                : d3.timeFormat('%b %d')(dt)
+        }
 
         const lows = candles.map(d => d.low)
         const highs = candles.map(d => d.high)
@@ -255,17 +343,87 @@ export class TachionChart {
         this.xScale.domain([0, xMax])
         this.yScale.domain([yMin - yPad, yMax + yPad])
 
+        // Use explicit integer tick positions to avoid repeated labels caused by
+        // multiple tick values rounding to the same candle index.
+        const desiredTicks = Math.min(8, indexedCandles.length)
+        let tickValues = []
+        if (desiredTicks <= 1) {
+            tickValues = [0]
+        } else {
+            const step = xMax / (desiredTicks - 1)
+            for (let j = 0; j < desiredTicks; j++) {
+                tickValues.push(Math.round(j * step))
+            }
+        }
+        tickValues.push(0, xMax)
+        tickValues = [...new Set(tickValues
+            .map(v => Math.max(0, Math.min(xMax, v)))
+        )].sort((a, b) => a - b)
+
+        const fmtDay = d3.timeFormat('%b %d')
+        const fmtDayYear = d3.timeFormat('%b %d %Y')
+        const fmtTime = d3.timeFormat('%b %d %H:%M')
+        const fmtTimeYear = d3.timeFormat('%b %d %Y %H:%M')
+        const fmtIso = d3.timeFormat('%Y-%m-%d %H:%M')
+
+        const labelMap = new Map()
+        const usedLabels = new Set()
+        let prevTickYear = null
+
+        for (const i of tickValues) {
+            const dt = this.baseDates[i]
+            if (!dt) {
+                labelMap.set(i, '')
+                continue
+            }
+
+            const dtYear = dt.getFullYear()
+            const yearBoundary = prevTickYear != null && dtYear !== prevTickYear
+            const includeYear = mayShowYear && (dtYear !== latestYear || yearBoundary)
+
+            let label = showTime
+                ? (includeYear ? fmtTimeYear(dt) : fmtTime(dt))
+                : (includeYear ? fmtDayYear(dt) : fmtDay(dt))
+
+            // If formatting would duplicate an existing label, promote to a more specific
+            // format (add time/year) to guarantee uniqueness.
+            if (usedLabels.has(label)) {
+                label = fmtTimeYear(dt)
+            }
+            if (usedLabels.has(label)) {
+                label = fmtIso(dt)
+            }
+
+            usedLabels.add(label)
+            labelMap.set(i, label)
+            prevTickYear = dtYear
+        }
+
+        this._xTickValues = tickValues
+        this._xTickLabelMap = labelMap
+
         const xAxis = d3.axisBottom(this.xScale)
-            .ticks(Math.min(8, indexedCandles.length))
-            .tickFormat((idx) => {
-                const i = Math.max(0, Math.min(indexedCandles.length - 1, Math.round(idx)))
-                const dt = this.baseDates[i]
-                return dt ? this.xLabelFormat(dt) : ''
-            })
+            .tickValues(tickValues)
+            .tickFormat((v) => labelMap.get(Math.round(v)) ?? '')
         const yAxis = d3.axisLeft(this.yScale).ticks(6)
 
         this.xAxis.call(xAxis)
         this.yAxis.call(yAxis)
+
+        // Prevent edge tick labels from getting clipped by the chart bounds.
+        this.xAxis.selectAll('.tick text')
+            .attr('text-anchor', (d) => {
+                const px = this.xScale(d)
+                if (px > this.width - 8) return 'end'
+                if (px < 8) return 'start'
+                return 'middle'
+            })
+            .attr('dx', (d) => {
+                const px = this.xScale(d)
+                if (px > this.width - 8) return '-0.4em'
+                if (px < 8) return '0.4em'
+                return '0'
+            })
 
         this.xAxis.selectAll('path,line').attr('stroke', 'rgba(255,255,255,0.2)')
         this.yAxis.selectAll('path,line').attr('stroke', 'rgba(255,255,255,0.2)')
@@ -332,6 +490,9 @@ export class TachionChart {
         }
 
         this.predictionLine.attr('opacity', 0)
+        this.predictionBand.attr('opacity', 0)
+        this.predictionUpper.attr('opacity', 0)
+        this.predictionLower.attr('opacity', 0)
         this._bindHover()
     }
 
@@ -397,48 +558,105 @@ export class TachionChart {
             })
     }
 
-    // Keep prediction support as a lightweight close-price overlay
+    // Prediction overlay: draws median line, upper/lower bounds, and shaded band.
+    // Expects: { predictions: [{ timestamp, upper, lower, median }, ...] }
+    // where predictions.length === Math.floor(Math.log(n)), n = currentData.length
     animatePrediction(prediction) {
         if (!this.currentData.length) return
 
-        const last = this.currentData[this.currentData.length - 1]
-        const predictionData = (prediction?.timestamps ?? []).map((t, i) => ({
-            date: parseDateLike(t),
-            close: toNumber(prediction?.medians?.[i])
-        })).filter(d => d.date && d.close != null)
-
-        if (!predictionData.length) {
+        const pts = prediction?.predictions ?? []
+        if (!pts.length) {
             this.predictionLine.attr('opacity', 0)
+            this.predictionBand.attr('opacity', 0)
+            this.predictionUpper.attr('opacity', 0)
+            this.predictionLower.attr('opacity', 0)
             return
         }
 
+        const last = this.currentData[this.currentData.length - 1]
         const startX = Math.max(0, this.currentData.length - 1)
-        const pathData = [
-            { x: startX, close: last.close },
-            ...predictionData.map((d, i) => ({ x: startX + i + 1, close: d.close }))
+
+        // Build indexed path data for each series, anchored at the last real candle
+        const medianPath = [
+            { x: startX, y: last.close },
+            ...pts.map((p, i) => ({ x: startX + i + 1, y: toNumber(p.median) }))
+        ]
+        const upperPath = [
+            { x: startX, y: last.close },
+            ...pts.map((p, i) => ({ x: startX + i + 1, y: toNumber(p.upper) }))
+        ]
+        const lowerPath = [
+            { x: startX, y: last.close },
+            ...pts.map((p, i) => ({ x: startX + i + 1, y: toNumber(p.lower) }))
         ]
 
-        const extendedMaxX = Math.max(this.currentMaxX, startX + predictionData.length)
+        // Extend xScale to make room for prediction points
+        const extendedMaxX = Math.max(this.currentMaxX, startX + pts.length)
         const xOverlayScale = this.xScale.copy().domain([0, extendedMaxX])
+
+        // Re-draw x axis with same tick logic
+        const tickValues = Array.isArray(this._xTickValues) && this._xTickValues.length
+            ? this._xTickValues
+            : d3.range(0, Math.min(this.baseDates.length, 8)).map(i => i)
+
         const xAxis = d3.axisBottom(xOverlayScale)
-            .ticks(Math.min(8, this.baseDates.length))
-            .tickFormat((idx) => {
-                const i = Math.round(idx)
+            .tickValues(tickValues)
+            .tickFormat((v) => {
+                const i = Math.round(v)
                 if (i < 0 || i >= this.baseDates.length) return ''
+                if (this._xTickLabelMap && this._xTickLabelMap.has(i)) return this._xTickLabelMap.get(i)
                 const dt = this.baseDates[i]
-                return dt ? this.xLabelFormat(dt) : ''
+                return this._xTickFormatter ? this._xTickFormatter(dt) : (dt ? d3.timeFormat('%b %d')(dt) : '')
             })
         this.xAxis.call(xAxis)
+        this.xAxis.selectAll('.tick text')
+            .attr('text-anchor', (d) => {
+                const px = xOverlayScale(d)
+                if (px > this.width - 8) return 'end'
+                if (px < 8) return 'start'
+                return 'middle'
+            })
+            .attr('dx', (d) => {
+                const px = xOverlayScale(d)
+                if (px > this.width - 8) return '-0.4em'
+                if (px < 8) return '0.4em'
+                return '0'
+            })
         this.xAxis.selectAll('path,line').attr('stroke', 'rgba(255,255,255,0.2)')
         this.xAxis.selectAll('text').attr('fill', 'rgba(238,238,238,0.75)').style('font-size', '10px')
 
-        const line = d3.line()
+        // Line generators
+        const lineFn = d3.line()
             .x(d => xOverlayScale(d.x))
-            .y(d => this.yScale(d.close))
+            .y(d => this.yScale(d.y))
 
+        // Shaded band between upper and lower bounds
+        const bandArea = d3.area()
+            .x(d => xOverlayScale(d.x))
+            .y0((d, i) => this.yScale(lowerPath[i].y))
+            .y1(d => this.yScale(d.y))
+
+        this.predictionBand
+            .datum(upperPath)
+            .attr('d', bandArea)
+            .attr('opacity', 1)
+
+        // Median line (prominent, dashed)
         this.predictionLine
-            .datum(pathData)
-            .attr('d', line)
+            .datum(medianPath)
+            .attr('d', lineFn)
+            .attr('opacity', 1)
+
+        // Upper bound line (subtle, dashed)
+        this.predictionUpper
+            .datum(upperPath)
+            .attr('d', lineFn)
+            .attr('opacity', 1)
+
+        // Lower bound line (subtle, dashed)
+        this.predictionLower
+            .datum(lowerPath)
+            .attr('d', lineFn)
             .attr('opacity', 1)
     }
 }

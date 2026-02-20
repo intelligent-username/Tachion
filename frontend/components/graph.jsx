@@ -1,23 +1,24 @@
 // Graph component - D3 chart wrapper
 import { useEffect, useRef } from 'react'
 import { useAppState } from '../js/state'
-import { TachionChart } from '../js/visualizer'
+import { TChart } from '../js/visualizer'
 
 export default function Graph() {
     const containerRef = useRef(null)
     const chartRef = useRef(null)
-    const { historicalData, predictionData, timespan, drawMovingAverage, isLoading, loadingMessage } = useAppState()
+    const { historicalData, predictionData, timespan, drawMovingAverage, isLoading, loadingMessage, currentSymbol, error, registerChart } = useAppState()
 
     // Initialize chart on mount
     useEffect(() => {
         if (containerRef.current && !chartRef.current) {
-            chartRef.current = new TachionChart(containerRef.current)
+            chartRef.current = new TChart(containerRef.current)
+            registerChart(chartRef.current)
         }
-    }, [])
+    }, [registerChart])
 
     // Update history when data changes
     useEffect(() => {
-        if (chartRef.current && historicalData.length > 0) {
+        if (chartRef.current) {
             chartRef.current.renderHistory(historicalData, timespan, drawMovingAverage)
         }
     }, [historicalData, timespan, drawMovingAverage])
@@ -34,6 +35,12 @@ export default function Graph() {
             {isLoading && (
                 <div className="chart-loading-overlay">
                     <span>{loadingMessage || 'Loading...'}</span>
+                </div>
+            )}
+
+            {!isLoading && currentSymbol && (historicalData?.length ?? 0) === 0 && (
+                <div className="chart-loading-overlay">
+                    <span>{error ? 'No data' : 'No data'}</span>
                 </div>
             )}
             {/* D3 will render the chart here */}

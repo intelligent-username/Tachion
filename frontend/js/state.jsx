@@ -1,5 +1,5 @@
 // Global state management using React Context
-import React, { createContext, useContext, useState, useCallback } from 'react'
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react'
 import { fetchHistory, fetchPrediction, sendSearch } from './api'
 
 // Initial state
@@ -22,6 +22,61 @@ const AppContext = createContext(null)
 // Provider component
 export function StateProvider({ children }) {
     const [state, setState] = useState(initialState)
+    const prefetchInFlight = useRef(new Set())
+    const chartInstanceRef = useRef(null)
+
+    // Let graph.jsx register its TChart instance so runPrediction can read currentData
+    const registerChart = useCallback((chart) => {
+        chartInstanceRef.current = chart
+    }, [])
+
+    const getPrefetchTimespan = useCallback((timespan) => {
+        const ts = String(timespan || '').trim()
+        if (!ts || ts === 'max') return null
+        if (ts === 'ytd') return '1y'
+        const h = ts.match(/^(\d+)h$/i)
+        if (h) return '60d'
+        const d = ts.match(/^(\d+)d$/i)
+        if (d) {
+            const days = Number(d[1])
+            if (days <= 14) return '1y'
+            if (days <= 60) return '1y'
+            return 'max'
+        }
+        const m = ts.match(/^(\d+)m$/i)
+        if (m) return 'max'
+        const y = ts.match(/^(\d+)y$/i)
+        if (y) return 'max'
+        return null
+    }, [])
+
+    const prefetchHistory = useCallback(async (symbol, assetClass, currentTimespan) => {
+        if (!symbol || !assetClass) return
+        const prefetchTs = getPrefetchTimespan(currentTimespan)
+        if (!prefetchTs) return
+
+        const key = `${assetClass}:${symbol}:${prefetchTs}`
+        if (state.searchedHistory[key]) return
+        if (prefetchInFlight.current.has(key)) return
+
+        prefetchInFlight.current.add(key)
+        try {
+            const data = await fetchHistory(symbol, assetClass, prefetchTs)
+            if (Array.isArray(data) && data.length > 0) {
+                setState(prev => ({
+                    ...prev,
+                    searchedHistory: {
+                        ...prev.searchedHistory,
+                        [key]: true
+                    }
+                }))
+            }
+        } catch {
+            // Silent background prefetch
+        } finally {
+            prefetchInFlight.current.delete(key)
+        }
+    }, [getPrefetchTimespan, state.searchedHistory])
 
     // Set the current asset and fetch its history
     const setAsset = useCallback(async (symbol, assetClass, timespan = state.timespan) => {
@@ -50,17 +105,33 @@ export function StateProvider({ children }) {
                 isLoading: false,
                 loadingMessage: null
             }))
+
+            if (Array.isArray(data) && data.length > 0) {
+                // Background cache warm-up for larger timeframes
+                prefetchHistory(symbol, assetClass, timespan)
+            } else {
+                // Ensure UI clears on empty result
+                setState(prev => ({
+                    ...prev,
+                    historicalData: [],
+                    predictionData: null
+                }))
+            }
         } catch (err) {
             setState(prev => ({
                 ...prev,
                 error: err.message,
                 isLoading: false,
-                loadingMessage: null
+                loadingMessage: null,
+                historicalData: [],
+                predictionData: null
             }))
         }
     }, [state.timespan])
 
     // Run prediction for the current asset
+    // Reads the visualizer's currentData and sends it to /predict.
+    // Expects back ⌊ln(n)⌋ prediction points with upper, lower, median.
     const runPrediction = useCallback(async (horizon = 7, options = {}) => {
         const targetSymbol = options.symbol ?? state.currentSymbol
         const targetAssetClass = options.assetClass ?? state.assetClass
@@ -95,10 +166,16 @@ export function StateProvider({ children }) {
                 }))
             }
 
+            // Pull the visualizer's current candle data
+            const candles = chartInstanceRef.current?.currentData ?? []
+            if (!candles.length) {
+                throw new Error('No chart data available for prediction')
+            }
+
             const prediction = await fetchPrediction(
                 targetSymbol,
                 targetAssetClass,
-                horizon
+                candles
             )
             setState(prev => ({
                 ...prev,
@@ -149,12 +226,24 @@ export function StateProvider({ children }) {
                 isLoading: false,
                 loadingMessage: null
             }))
+
+            if (Array.isArray(data) && data.length > 0) {
+                prefetchHistory(targetSymbol, targetAssetClass, timespan)
+            } else {
+                setState(prev => ({
+                    ...prev,
+                    historicalData: [],
+                    predictionData: null
+                }))
+            }
         } catch (err) {
             setState(prev => ({
                 ...prev,
                 error: err.message,
                 isLoading: false,
-                loadingMessage: null
+                loadingMessage: null,
+                historicalData: [],
+                predictionData: null
             }))
         }
     }, [state.currentSymbol, state.assetClass, state.searchedHistory])
@@ -164,7 +253,8 @@ export function StateProvider({ children }) {
         setTimespan,
         setDrawMovingAverage: (drawMovingAverage) => setState(prev => ({ ...prev, drawMovingAverage })),
         setAsset,
-        runPrediction
+        runPrediction,
+        registerChart
     }
 
     return (

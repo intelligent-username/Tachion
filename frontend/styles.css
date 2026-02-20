@@ -23,6 +23,11 @@
 @import './css/sidebar.css';
 
 /*
+  2b) Info Modal (search guide overlay)
+*/
+@import './css/info-modal.css';
+
+/*
   3) Chart Panel
   - chart panel layout and styling
   - heading spacing inside chart panel

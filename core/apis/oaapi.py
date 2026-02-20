@@ -1,6 +1,6 @@
 """
 OANDA API Call Utils
-For Forex data collection - 10 years of historical data
+For Forex and Commodity data collection - 10 years and 15 years of historical data respectively
 """
 
 import os

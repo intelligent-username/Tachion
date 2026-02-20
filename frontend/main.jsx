@@ -10,8 +10,23 @@ import Footer from './components/footer'
 import TimespanSelector from './components/timespan-selector'
 import './styles.css'
 
+const CURRENCY_NAMES = {
+	USD: 'USD', EUR: 'EUR', GBP: 'GBP', JPY: 'JPY', CAD: 'CAD',
+	AUD: 'AUD', NZD: 'NZD', CHF: 'CHF', SGD: 'SGD', HKD: 'HKD',
+	SEK: 'SEK', NOK: 'NOK', DKK: 'DKK', ZAR: 'ZAR', MXN: 'MXN',
+	TRY: 'TRY', PLN: 'PLN', CNH: 'CNH', INR: 'INR', THB: 'THB',
+}
+
+function formatForexLabel(symbol, value) {
+	const clean = (symbol || '').toUpperCase().replace(/[\/_-]/g, '')
+	const base = clean.slice(0, 3)
+	const quote = clean.slice(3, 6)
+	const formatted = value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+	return `1 ${CURRENCY_NAMES[base] || base} equals ${formatted} ${CURRENCY_NAMES[quote] || quote}`
+}
+
 function TrendlinesTitle() {
-	const { historicalData, drawMovingAverage, setDrawMovingAverage } = useAppState()
+	const { historicalData, drawMovingAverage, setDrawMovingAverage, currentSymbol, assetClass } = useAppState()
 
 	const closes = (historicalData || [])
 		.map(d => Number(d?.close ?? d?.value))
@@ -21,9 +36,14 @@ function TrendlinesTitle() {
 	const last = closes.length ? closes[closes.length - 1] : null
 	const pct = first && last ? ((last - first) / first) * 100 : null
 
-	const priceText = last != null
-		? `$${last.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`
-		: '—'
+	let priceText = '—'
+	if (last != null) {
+		if (assetClass === 'forex' && currentSymbol) {
+			priceText = formatForexLabel(currentSymbol, last)
+		} else {
+			priceText = `$${last.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`
+		}
+	}
 
 	const pctText = pct != null
 		? `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`

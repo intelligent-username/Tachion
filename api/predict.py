@@ -1,21 +1,23 @@
 """
-API endpoints for Tachion frontend.
+API endpoints for the frontend.
 
-1) POST /api/predict - Run prediction for a symbol
+1) GET /api/predict - Placeholder prediction endpoint
+2) POST /api/predict - Same payload format support for compatibility
 """
 
 import sys
 import datetime
+import json
+import math
 from pathlib import Path
+from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
-
-from core.processor.ip import get_historical_data
 
 router = APIRouter()
 
@@ -45,75 +47,118 @@ def _parse_datetime(value: str) -> datetime.datetime:
 class PredictRequest(BaseModel):
     symbol: str
     asset_class: str
-    horizon: int = 7
+    candles: list[dict[str, Any]]
+
+
+class PredictionPoint(BaseModel):
+    timestamp: str
+    median: float
+    lower: float
+    upper: float
 
 
 class PredictResponse(BaseModel):
-    timestamps: list
-    medians: list
-    lower_95s: list
-    upper_95s: list
+    predictions: list[PredictionPoint]
     metadata: dict
 
 
-@router.post("/predict", response_model=PredictResponse)
-async def predict(request: PredictRequest):
-    """Run model prediction for a symbol."""
-    try:
-        # Get recent historical data for context
-        values = get_historical_data(request.symbol, request.asset_class)
-        
-        if not values:
-            raise HTTPException(status_code=404, detail="No data found for symbol")
-        
-        # Get the last price
-        last_value = values[-1]
-        last_price = float(last_value["close"])
-        last_date = _parse_datetime(last_value["datetime"])
-        
-        # TODO: Load actual model from models/deepar_{asset_class}.pt
-        # For now, generate mock predictions based on historical volatility
-        
-        # Calculate historical volatility
-        closes = [float(v["close"]) for v in values if v.get("close") is not None]
-        if len(closes) > 1:
-            returns = [(closes[i] - closes[i-1]) / closes[i-1] for i in range(1, len(closes))]
-            volatility = (sum(r**2 for r in returns) / len(returns)) ** 0.5
-        else:
-            volatility = 0.02  # Default 2% volatility
-        
-        # Generate prediction timestamps and values
-        timestamps = []
-        medians = []
-        lower_95s = []
-        upper_95s = []
-        
-        current_price = last_price
-        for i in range(1, request.horizon + 1):
-            pred_date = last_date + datetime.timedelta(days=i)
-            timestamps.append(pred_date.strftime("%Y-%m-%d"))
-            
-            # Simple random walk with drift (placeholder for actual model)
-            # Median stays relatively flat with slight trend
-            drift = 0.0001 * i
-            median = current_price * (1 + drift)
-            
-            # 95% CI grows with sqrt of time
-            ci_width = last_price * volatility * 1.96 * (i ** 0.5)
-            
-            medians.append(round(median, 4))
-            lower_95s.append(round(median - ci_width, 4))
-            upper_95s.append(round(median + ci_width, 4))
-        
-        return PredictResponse(
-            timestamps=timestamps,
-            medians=medians,
-            lower_95s=lower_95s,
-            upper_95s=upper_95s,
-            metadata={"model": f"deepar_{request.asset_class}", "horizon": request.horizon}
+def _extract_candle_datetime(row: dict[str, Any]) -> datetime.datetime | None:
+    for key in ('datetime', 'timestamp', 'date', 'time'):
+        value = row.get(key)
+        if value is None:
+            continue
+        try:
+            return _parse_datetime(str(value))
+        except Exception:
+            continue
+    return None
+
+
+def _extract_last_close(candles: list[dict[str, Any]]) -> float:
+    for row in reversed(candles):
+        try:
+            close = row.get('close')
+            if close is None:
+                continue
+            return float(close)
+        except (TypeError, ValueError):
+            continue
+    return 0.0
+
+
+def _prediction_end_bound(now: datetime.datetime) -> datetime.datetime:
+    close_time = datetime.time(16, 0)
+    today_close = datetime.datetime.combine(now.date(), close_time)
+    return now if now < today_close else today_close
+
+
+def _build_prediction_response(symbol: str, asset_class: str, candles: list[dict[str, Any]]) -> PredictResponse:
+    if not candles:
+        raise HTTPException(status_code=400, detail='Missing candles data')
+
+    parsed_dates = [d for d in (_extract_candle_datetime(row) for row in candles) if d is not None]
+    if not parsed_dates:
+        raise HTTPException(status_code=400, detail='No valid candle timestamps found')
+
+    start_date = min(parsed_dates)
+    now = datetime.datetime.now()
+    end_date = _prediction_end_bound(now)
+    timeframe = end_date - start_date
+
+    print(
+        f"Request Prediction request with Symbol {symbol}, "
+        f"start date {start_date}, end date {end_date}, "
+        f"totalling a time frame of {timeframe}"
+    )
+
+    n = len(candles)
+    point_count = max(0, math.floor(math.log(n))) if n > 0 else 0
+    last_close = _extract_last_close(candles)
+
+    predictions: list[PredictionPoint] = []
+    for i in range(1, point_count + 1):
+        ts = end_date + datetime.timedelta(days=i)
+        predictions.append(
+            PredictionPoint(
+                timestamp=ts.strftime('%Y-%m-%d %H:%M:%S'),
+                median=last_close,
+                lower=last_close,
+                upper=last_close,
+            )
         )
-    
-    except HTTPException:
-        raise
+
+    return PredictResponse(
+        predictions=predictions,
+        metadata={
+            'symbol': symbol,
+            'asset_class': asset_class,
+            'points': point_count,
+            'placeholder': True,
+            'start_date': start_date.strftime('%Y-%m-%d %H:%M:%S'),
+            'end_date': end_date.strftime('%Y-%m-%d %H:%M:%S'),
+            'timeframe': str(timeframe),
+        },
+    )
+
+
+@router.get('/predict', response_model=PredictResponse)
+async def predict_get(
+    symbol: str,
+    asset_class: str,
+    candles: str = Query(default='[]', description='JSON-encoded candle list'),
+):
+    """Placeholder prediction endpoint (GET)."""
+    try:
+        candle_rows = json.loads(candles)
+        if not isinstance(candle_rows, list):
+            raise ValueError('candles must decode to a list')
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=400, detail=f'Invalid candles query payload: {e}')
+
+    return _build_prediction_response(symbol, asset_class, candle_rows)
+
+
+@router.post('/predict', response_model=PredictResponse)
+async def predict_post(request: PredictRequest):
+    """Compatibility endpoint (POST) using same response format."""
+    return _build_prediction_response(request.symbol, request.asset_class, request.candles)

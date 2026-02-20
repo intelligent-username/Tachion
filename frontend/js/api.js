@@ -44,22 +44,25 @@ export async function fetchHistory(symbol, assetClass, timespan = 'max') {
 }
 
 // Get prediction from backend
-export async function fetchPrediction(symbol, assetClass, horizon) {
-    const response = await fetch(`${API_BASE}/predict`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            symbol: symbol,
-            asset_class: assetClass,
-            horizon: horizon
-        })
+// Sends the visualizer's current OHLCV candle data and expects back
+// ⌊ln(n)⌋ prediction points, each with upper, lower, and median.
+export async function fetchPrediction(symbol, assetClass, candles) {
+    const params = new URLSearchParams({
+        symbol,
+        asset_class: assetClass,
+        candles: JSON.stringify(candles ?? [])
+    })
+
+    const response = await fetch(`${API_BASE}/predict?${params.toString()}`, {
+        method: 'GET'
     })
 
     if (!response.ok) {
         throw new Error(`Failed to fetch prediction: ${response.statusText}`)
     }
 
+    // Expected response shape:
+    // { predictions: [ { timestamp, upper, lower, median }, ... ] }
+    // where predictions.length === Math.floor(Math.log(candles.length))
     return await response.json()
 }

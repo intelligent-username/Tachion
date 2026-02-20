@@ -1,4 +1,4 @@
-# All Tachion requirements
+# All requirements to run Tachion's backend. Basically everything is mandatory.
 # See the README for installation instructions.
 
 # Backend

@@ -1,5 +1,5 @@
 """
-Tachion API Server
+The API Server
 
 Run with: uvicorn api.main:app --reload
 """

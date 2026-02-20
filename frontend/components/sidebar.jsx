@@ -1,11 +1,13 @@
 // Sidebar component - Search and Predict controls
 import { useState } from 'react'
 import { useAppState } from '../js/state'
+import InfoModal from './info-modal'
 
 export default function Sidebar() {
     const [searchTerm, setSearchTerm] = useState('')
     const [searchResults, setSearchResults] = useState([])
     const [assetClass, setAssetClass] = useState('equities')
+    const [showInfo, setShowInfo] = useState(false)
     const { currentSymbol, timespan, isLoading, setAsset, runPrediction } = useAppState()
     const isSearchEmpty = !searchTerm.trim()
 
@@ -66,7 +68,16 @@ export default function Sidebar() {
 
     return (
         <div className="sidebar">
+            {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
             <div className="search-section">
+                <button
+                    className="info-btn"
+                    onClick={() => setShowInfo(true)}
+                    aria-label="Search help"
+                    title="How to search"
+                >
+                    ?
+                </button>
                 <div className="search-bar-wrapper">
                     <input
                         id="symbol-input"
@@ -114,7 +125,7 @@ export default function Sidebar() {
                     className="asset-select"
                 >
                     <option value="equities">Equities</option>
-                    <option value="forex">Forex</option>
+                    <option value="forex">FOREX</option>
                     <option value="comm">Commodities</option>
                     <option value="crypto">Crypto</option>
                     <option value="interest">Interest Rates</option>
@@ -131,7 +142,7 @@ export default function Sidebar() {
                     (Model might take some time to run inference)
                 </span>
                 <span>
-                    *Not functional right now, working on tweaking accuracy
+                    *Not functional right now, working on tweaking accuracy :)
                 </span>
             </button>
         </div>

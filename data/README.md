@@ -70,7 +70,7 @@ if we ever want to re-train any of the models, we'll re-run the relevant `collec
 
 ### Commodities
 
-Once again, use the `OANDA` API to collect historical data and for inference. About 15 years of data is collected.
+Once again, use the `OANDA` API to collect historical data and for inference.
 
 ### Rates
 
