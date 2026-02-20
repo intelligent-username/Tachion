@@ -2,60 +2,53 @@
 import { useState } from 'react'
 import { useAppState } from '../js/state'
 
-// Infer asset class from symbol format
-function inferAssetClass(symbol) {
-    const upper = symbol.toUpperCase()
-
-    // Crypto pairs typically have USDT/USD suffix
-    if (upper.includes('USDT') || upper.includes('BTC') || upper.includes('ETH')) {
-        return 'crypto'
-    }
-
-    // Forex pairs have underscore (e.g., EUR_USD)
-    if (upper.includes('_')) {
-        return 'forex'
-    }
-
-    // Commodities
-    if (['XAU', 'XAG', 'OIL', 'GOLD', 'SILVER'].some(c => upper.includes(c))) {
-        return 'comm'
-    }
-
-    // Default to equities
-    return 'equities'
-}
-
 export default function Sidebar() {
     const [searchTerm, setSearchTerm] = useState('')
     const [searchResults, setSearchResults] = useState([])
+    const [assetClass, setAssetClass] = useState('equities')
     const { currentSymbol, isLoading, setAsset, runPrediction } = useAppState()
 
     const handleSearch = () => {
         if (!searchTerm.trim()) return
-
-        // For now, just use the search term directly
-        // In production, this would call an external API for autocomplete
-        const assetClass = inferAssetClass(searchTerm)
-        setAsset(searchTerm.toUpperCase(), assetClass)
+        setAsset(searchTerm, assetClass)
     }
 
     const handlePredict = () => {
         runPrediction(7) // Default horizon of 7 periods
     }
 
+    const placeholders = {
+        'equities': 'e.g. NVDA',
+        'crypto': 'e.g. ETH',
+        'forex': 'e.g. EUR_USD',
+        'comm': 'e.g. GOLD',
+        'interest': ''
+    }
+
     return (
         <div className="sidebar">
             <div className="search-section">
-                <label htmlFor="symbol-input">Search bar</label>
-                <input
-                    id="symbol-input"
-                    type="text"
-                    placeholder="Symbol"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    disabled={isLoading}
-                />
+                <div className="search-bar-wrapper">
+                    <input
+                        id="symbol-input"
+                        type="text"
+                        placeholder={placeholders[assetClass]}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                        disabled={isLoading}
+                    />
+                    <svg
+                        className="search-icon"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        onClick={handleSearch}
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
 
                 {searchResults.length > 0 && (
                     <div className="search-results">
@@ -73,6 +66,20 @@ export default function Sidebar() {
                         ))}
                     </div>
                 )}
+
+                <select
+                    id="asset-select"
+                    value={assetClass}
+                    onChange={(e) => setAssetClass(e.target.value)}
+                    disabled={isLoading}
+                    className="asset-select"
+                >
+                    <option value="equities">Equities</option>
+                    <option value="forex">Forex</option>
+                    <option value="comm">Commodities</option>
+                    <option value="crypto">Crypto</option>
+                    <option value="interest">Interest Rates</option>
+                </select>
             </div>
 
             <button

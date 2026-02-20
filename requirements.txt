@@ -3,6 +3,7 @@
 
 # Backend
 fastapi==0.129.0
+uvicorn==0.34.0
 
 # Models
 

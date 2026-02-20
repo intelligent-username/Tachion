@@ -95,6 +95,8 @@ bun install
 bun dev
 ```
 
+The frontend will be available at [`localhost:3000`](https://localhost:3000).
+
 *See [frontend/README.md](./frontend/README.md) for UI structure.*
 
 #### 3. Training

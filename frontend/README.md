@@ -21,3 +21,5 @@ frontend/
   main.jsx        # React root
   vite.config.js  # Vite config
 ```
+
+<!-- Note to self: do not change this structure, and don't add any files at all to any folders -->
