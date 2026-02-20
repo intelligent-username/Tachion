@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def call_specific_oanda(path, instruments, num_calls, rate_limit=30):
+def call_specific_oanda(path, instruments, num_calls, rate_limit=30, json_indent=4):
     """
     Make Specific Calls to the OANDA API using a persistent session
 
@@ -109,7 +109,7 @@ def call_specific_oanda(path, instruments, num_calls, rate_limit=30):
                         unique_details.append(d)
 
                 with open(file_path, "w") as f:
-                    json.dump(unique_details, f, indent=4)
+                    json.dump(unique_details, f, indent=json_indent)
                 print(f"Wrote {len(unique_details)} records for {instrument} to {file_path}")
             else:
                 print(f"No data collected for {instrument}")
@@ -170,7 +170,7 @@ def call_specific_oanda(path, instruments, num_calls, rate_limit=30):
             if new_data:
                 full_data = existing_data + new_data
                 with open(file_path, "w") as f:
-                    json.dump(full_data, f, indent=4)
+                    json.dump(full_data, f, indent=json_indent)
                 print(f"Updated {instrument}: added {len(new_data)} new records (total: {len(full_data)})")
             else:
                 print(f"No updates needed for {instrument}")
@@ -266,11 +266,11 @@ def OandaAPI(url_base="https://api-fxpractice.oanda.com/v3/instruments",
             
             values.append({
                 "datetime": dt.strftime("%Y-%m-%d %H:%M:%S"),
-                "open": mid.get("o", "0"),
-                "high": mid.get("h", "0"),
-                "low": mid.get("l", "0"),
-                "close": mid.get("c", "0"),
-                "volume": str(candle.get("volume", 0))
+                "open": float(mid.get("o", 0.0)),
+                "high": float(mid.get("h", 0.0)),
+                "low": float(mid.get("l", 0.0)),
+                "close": float(mid.get("c", 0.0)),
+                "volume": float(candle.get("volume", 0.0))
             })
 
         return {

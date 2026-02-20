@@ -9,13 +9,16 @@ export default function Sidebar() {
     const { currentSymbol, timespan, isLoading, setAsset, runPrediction } = useAppState()
     const isSearchEmpty = !searchTerm.trim()
 
+    const sanitizeSymbol = (value) => value.trim().replace(/^\$+/, '')
+
     const handleSearch = () => {
-        if (!searchTerm.trim()) return
-        setAsset(searchTerm, assetClass, timespan)
+        const symbol = sanitizeSymbol(searchTerm)
+        if (!symbol) return
+        setAsset(symbol, assetClass, timespan)
     }
 
     const handlePredict = () => {
-        const symbolToUse = searchTerm.trim() || currentSymbol
+        const symbolToUse = sanitizeSymbol(searchTerm) || currentSymbol
         runPrediction(7, {
             symbol: symbolToUse,
             assetClass,
@@ -94,9 +97,12 @@ export default function Sidebar() {
                 onClick={handlePredict}
                 disabled={isLoading || isSearchEmpty}
             >
-                <span className="button-text">Predict!</span>
+                <span className="button-text">Predict</span>
                 <span className="button-subtitle">
-                    (Model will return a 95% CI)
+                    (Model might take some time to run inference)
+                </span>
+                <span>
+                    *Not functional right now, working on tweaking accuracy
                 </span>
             </button>
         </div>

@@ -22,7 +22,9 @@ The data folder is for:
 
 Initial collections will be saved as `JSON` (and not pushed). Each final is saved in CSV format and converted to `parquet` before training. This data won't be pushed to GitHub right now, but can be easily fetched using the `collector` scripts. Note that you will need to get your own API keys for this. Simply place them in an `.env` file in the main directory of the project with the required API keys. You may want to see the main [`README.md`](../README.md/#) for a higher level overview.
 
-This README includes the following details:
+Note that the processed data is only used for training. During inference, we'll still pre-process the data in a similar manner but limit the scope of the data (to proper timespan and assets) and won't save it.
+
+This README includes the following details, use the outline to jump around:
 
 - [Storage Structure](#storage)
 - [Data Collection](#data-collection)

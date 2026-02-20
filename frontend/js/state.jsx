@@ -7,6 +7,7 @@ const initialState = {
     currentSymbol: null,
     assetClass: null,
     timespan: '7d',
+    drawMovingAverage: false,
     historicalData: [],
     predictionData: null,
     searchedHistory: {},
@@ -108,9 +109,48 @@ export function StateProvider({ children }) {
         }
     }, [state.currentSymbol, state.assetClass, state.timespan, state.searchedHistory])
 
+    // Update only chart timespan for current symbol/asset without re-running search endpoint
+    const setTimespan = useCallback(async (timespan) => {
+        if (!timespan) return
+
+        const targetSymbol = state.currentSymbol
+        const targetAssetClass = state.assetClass
+
+        setState(prev => ({
+            ...prev,
+            timespan,
+            error: null,
+            isLoading: !!(targetSymbol && targetAssetClass)
+        }))
+
+        if (!targetSymbol || !targetAssetClass) return
+
+        try {
+            const data = await fetchHistory(targetSymbol, targetAssetClass, timespan)
+            const key = `${targetAssetClass}:${targetSymbol}:${timespan}`
+
+            setState(prev => ({
+                ...prev,
+                historicalData: data,
+                searchedHistory: {
+                    ...prev.searchedHistory,
+                    [key]: true
+                },
+                isLoading: false
+            }))
+        } catch (err) {
+            setState(prev => ({
+                ...prev,
+                error: err.message,
+                isLoading: false
+            }))
+        }
+    }, [state.currentSymbol, state.assetClass])
+
     const value = {
         ...state,
-        setTimespan: (timespan) => setState(prev => ({ ...prev, timespan })),
+        setTimespan,
+        setDrawMovingAverage: (drawMovingAverage) => setState(prev => ({ ...prev, drawMovingAverage })),
         setAsset,
         runPrediction
     }

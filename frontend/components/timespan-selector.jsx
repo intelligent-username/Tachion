@@ -16,38 +16,83 @@ const ALL_OPTIONS = [
     { label: '3d',  value: '3d',   priority: 13 },
     { label: '2d',  value: '2d',   priority: 14 },
     { label: '1d',  value: '1d',   priority: 3 },
+    { label: '12h', value: '12h',  priority: 6 },
 ]
 
-const CHIP_PX   = 52   // approx px per chip incl. gap
-const CUSTOM_PX = 144  // approx px for the custom input incl. gap
+const BASE_RESERVED_PX = 148 // custom input + selector padding/border + safety margin
+const CHIP_SLOT_PX = 72      // conservative per-chip slot to avoid overflow
 
 function getAvailableSelectorWidth(selectorNode) {
     if (!selectorNode) return 0
     const header = selectorNode.closest('.chart-header')
     if (!header) return selectorNode.clientWidth
 
-    const title = header.querySelector('h1')
-    const titleWidth = title?.offsetWidth ?? 0
+    const titleBlock = header.querySelector('.chart-title-wrap') || header.querySelector('h1')
+    const titleWidth = titleBlock?.offsetWidth ?? 0
     const headerWidth = header.clientWidth
-    const gap = parseFloat(getComputedStyle(header).columnGap || getComputedStyle(header).gap || '0') || 0
-    const sidePadding = 8
+    const headerStyles = getComputedStyle(header)
+    const gap = parseFloat(headerStyles.columnGap || headerStyles.gap || '0') || 0
+    const paddingLeft = parseFloat(headerStyles.paddingLeft || '0') || 0
+    const paddingRight = parseFloat(headerStyles.paddingRight || '0') || 0
+    const sidePadding = paddingLeft + paddingRight + 2
+
+    // When selector wraps to the next line, it should use the full row width.
+    if (titleBlock && selectorNode.offsetTop > titleBlock.offsetTop) {
+        return Math.max(0, headerWidth - sidePadding)
+    }
 
     return Math.max(0, headerWidth - titleWidth - gap - sidePadding)
 }
 
 function getVisibleOptions(containerPx, currentValue) {
-    const slots = Math.max(1, Math.floor((containerPx - CUSTOM_PX - 24) / CHIP_PX))
     const byPriority = [...ALL_OPTIONS].sort((a, b) => a.priority - b.priority)
+    const currentOpt = ALL_OPTIONS.find(o => o.value === currentValue)
+
+    const slots = Math.max(
+        1,
+        Math.min(
+            byPriority.length,
+            Math.floor((containerPx - BASE_RESERVED_PX) / CHIP_SLOT_PX)
+        )
+    )
+
     const chosen = byPriority.slice(0, slots)
 
-    // Always keep the currently selected chip visible
-    const currentOpt = ALL_OPTIONS.find(o => o.value === currentValue)
+    // Always keep the currently selected chip visible.
     if (currentOpt && !chosen.includes(currentOpt)) {
-        chosen[chosen.length - 1] = currentOpt
+        if (chosen.length > 0) {
+            chosen[chosen.length - 1] = currentOpt
+        } else {
+            chosen.push(currentOpt)
+        }
     }
 
     const keep = new Set(chosen.map(o => o.value))
     return ALL_OPTIONS.filter(o => keep.has(o.value))
+}
+
+function trimOneByPriority(options, currentValue) {
+    if (!options.length) return options
+
+    const protectedValue = currentValue
+    const removable = options.filter(o => o.value !== protectedValue)
+    if (!removable.length) return options
+
+    const drop = removable.reduce((worst, opt) => {
+        if (!worst) return opt
+        return opt.priority > worst.priority ? opt : worst
+    }, null)
+
+    return options.filter(o => o.value !== drop.value)
+}
+
+function sameOptionSet(a, b) {
+    if (a === b) return true
+    if (!a || !b || a.length !== b.length) return false
+    for (let i = 0; i < a.length; i += 1) {
+        if (a[i].value !== b[i].value) return false
+    }
+    return true
 }
 
 export default function TimespanSelector() {
@@ -56,6 +101,7 @@ export default function TimespanSelector() {
     const [visibleOptions, setVisibleOptions]   = useState(ALL_OPTIONS)
     const [availableWidth, setAvailableWidth] = useState(0)
     const selectorRef = useRef(null)
+    const rafRef = useRef(null)
 
     const applyCustomDays = (value) => {
         const days = Number(value)
@@ -69,33 +115,71 @@ export default function TimespanSelector() {
         if (!node) return
 
         const header = node.closest('.chart-header')
+        const titleBlock = header?.querySelector('.chart-title-wrap') || header?.querySelector('h1')
         const recalc = () => {
             const nextWidth = getAvailableSelectorWidth(node)
-            setAvailableWidth(nextWidth)
-            setVisibleOptions(getVisibleOptions(nextWidth, timespan))
+            setAvailableWidth(prev => (prev === nextWidth ? prev : nextWidth))
+            setVisibleOptions(prev => {
+                const next = getVisibleOptions(nextWidth, timespan)
+                return sameOptionSet(prev, next) ? prev : next
+            })
+        }
+
+        const scheduleRecalc = () => {
+            if (rafRef.current != null) return
+            rafRef.current = window.requestAnimationFrame(() => {
+                rafRef.current = null
+                recalc()
+            })
         }
 
         recalc()
 
         const obs = new ResizeObserver(() => {
-            recalc()
+            scheduleRecalc()
         })
 
         if (header) {
             obs.observe(header)
+            obs.observe(node)
+            if (titleBlock) obs.observe(titleBlock)
         } else {
             obs.observe(node)
         }
 
-        return () => obs.disconnect()
+        return () => {
+            obs.disconnect()
+            if (rafRef.current != null) {
+                window.cancelAnimationFrame(rafRef.current)
+                rafRef.current = null
+            }
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     // Recalculate when timespan changes so the selected chip is always shown
     useEffect(() => {
         if (!availableWidth) return
-        setVisibleOptions(getVisibleOptions(availableWidth, timespan))
+        setVisibleOptions(prev => {
+            const next = getVisibleOptions(availableWidth, timespan)
+            return sameOptionSet(prev, next) ? prev : next
+        })
     }, [timespan, availableWidth])
+
+    // Guard against real overflow after render (single-row edge case).
+    useEffect(() => {
+        const node = selectorRef.current
+        if (!node) return
+        if (visibleOptions.length <= 1) return
+
+        const hasOverflow = node.scrollWidth > node.clientWidth + 1
+        if (!hasOverflow) return
+
+        setVisibleOptions(prev => {
+            const next = trimOneByPriority(prev, timespan)
+            return sameOptionSet(prev, next) ? prev : next
+        })
+    }, [visibleOptions, timespan])
 
     return (
         <div className="timespan-selector" role="group" aria-label="Select chart timespan" ref={selectorRef}>
@@ -112,7 +196,7 @@ export default function TimespanSelector() {
                 onBlur={() => applyCustomDays(customDays)}
             />
 
-            {/* Priority-filtered chips in display order */}
+            {/* Priority decides visibility; display keeps chronological ring order */}
             {visibleOptions.map(({ label, value }) => (
                 <button
                     key={value}

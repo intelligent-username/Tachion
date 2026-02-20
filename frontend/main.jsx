@@ -2,12 +2,50 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { StateProvider } from './js/state'
+import { useAppState } from './js/state'
 import Header from './components/header'
 import Sidebar from './components/sidebar'
 import Graph from './components/graph'
 import Footer from './components/footer'
 import TimespanSelector from './components/timespan-selector'
 import './styles.css'
+
+function TrendlinesTitle() {
+	const { historicalData, drawMovingAverage, setDrawMovingAverage } = useAppState()
+
+	const closes = (historicalData || [])
+		.map(d => Number(d?.close ?? d?.value))
+		.filter(Number.isFinite)
+
+	const first = closes.length ? closes[0] : null
+	const last = closes.length ? closes[closes.length - 1] : null
+	const pct = first && last ? ((last - first) / first) * 100 : null
+
+	const priceText = last != null
+		? `$${last.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`
+		: '—'
+
+	const pctText = pct != null
+		? `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`
+		: '—'
+
+	const pctClass = pct == null ? 'neutral' : pct >= 0 ? 'up' : 'down'
+
+	return (
+		<div className="chart-title-wrap">
+			<h1>Trendlines</h1>
+			<span className={`chart-title-metrics ${pctClass}`}>{priceText} • {pctText}</span>
+			<label className="ma-switch" aria-label="Draw moving averages">
+				<input
+					type="checkbox"
+					checked={!!drawMovingAverage}
+					onChange={(e) => setDrawMovingAverage(e.target.checked)}
+				/>
+				<span>Draw MA</span>
+			</label>
+		</div>
+	)
+}
 
 function App() {
 	return (
@@ -16,7 +54,7 @@ function App() {
 			<main className="main-content">
 				<section className="chart-panel">
 					<div className="chart-header">
-						<h1>Trendlines</h1>
+						<TrendlinesTitle />
 						<TimespanSelector />
 					</div>
 					<Graph />

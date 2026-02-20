@@ -6,7 +6,7 @@ import { TachionChart } from '../js/visualizer'
 export default function Graph() {
     const containerRef = useRef(null)
     const chartRef = useRef(null)
-    const { historicalData, predictionData, timespan } = useAppState()
+    const { historicalData, predictionData, timespan, drawMovingAverage } = useAppState()
 
     // Initialize chart on mount
     useEffect(() => {
@@ -18,9 +18,9 @@ export default function Graph() {
     // Update history when data changes
     useEffect(() => {
         if (chartRef.current && historicalData.length > 0) {
-            chartRef.current.renderHistory(historicalData, timespan)
+            chartRef.current.renderHistory(historicalData, timespan, drawMovingAverage)
         }
-    }, [historicalData, timespan])
+    }, [historicalData, timespan, drawMovingAverage])
 
     // Animate prediction when it arrives
     useEffect(() => {

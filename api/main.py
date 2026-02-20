@@ -6,6 +6,8 @@ Run with: uvicorn api.main:app --reload
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from api.predict import router as predict_router
 from api.search import router as search_router
@@ -28,6 +30,16 @@ app.add_middleware(
 # Include routers
 app.include_router(predict_router, prefix="/api")
 app.include_router(search_router, prefix="/api")
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(_, exc: StarletteHTTPException):
+    if exc.status_code == 404:
+        return JSONResponse(
+            status_code=404,
+            content={"detail": "Unknown request/path"}
+        )
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
 @app.get("/")

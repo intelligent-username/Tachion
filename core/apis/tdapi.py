@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def call_specific_td(path, symbols, num_calls, outputsize=5000, rate_limit=8):
+def call_specific_td(path, symbols, num_calls, outputsize=5000, rate_limit=8, json_indent=4):
     """
     Make Specific Calls to the TwelveData API
     
@@ -101,7 +101,7 @@ def call_specific_td(path, symbols, num_calls, outputsize=5000, rate_limit=8):
 
             if details:
                 with open(file_path, "w") as f:
-                    json.dump(details[::-1], f, indent=4)
+                    json.dump(details[::-1], f, indent=json_indent)
 
         else:
             with open(file_path, "r") as f:
@@ -171,7 +171,7 @@ def call_specific_td(path, symbols, num_calls, outputsize=5000, rate_limit=8):
 
             if new_data:
                 with open(file_path, "w") as f:
-                    json.dump(existing_data + new_data, f, indent=4)
+                    json.dump(existing_data + new_data, f, indent=json_indent)
 
 
 def TwelveDataAPI(url="https://api.twelvedata.com/time_series",
@@ -233,7 +233,20 @@ def TwelveDataAPI(url="https://api.twelvedata.com/time_series",
     if format.upper() == "CSV":
         return response.text
     else:
-        return response.json()
+        data = response.json()
+        if isinstance(data, dict) and isinstance(data.get("values"), list):
+            for row in data["values"]:
+                if not isinstance(row, dict):
+                    continue
+                try:
+                    row["open"] = float(row.get("open")) if row.get("open") is not None else None
+                    row["high"] = float(row.get("high")) if row.get("high") is not None else None
+                    row["low"] = float(row.get("low")) if row.get("low") is not None else None
+                    row["close"] = float(row.get("close")) if row.get("close") is not None else None
+                    row["volume"] = float(row.get("volume")) if row.get("volume") is not None else 0.0
+                except (TypeError, ValueError):
+                    pass
+        return data
 
 
 

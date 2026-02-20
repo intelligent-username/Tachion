@@ -1,27 +1,45 @@
 """
 API endpoints for Tachion frontend.
 
-1) GET /api/history - Fetch historical data for a symbol
-2) POST /api/predict - Run prediction for a symbol
+1) POST /api/predict - Run prediction for a symbol
 """
 
-import os
 import sys
 import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 # Add project root to path for imports
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from core.apis.yfapi import YFinanceAPI
-from core.apis.biapi import BinanceAPI
-from core.apis.oaapi import OandaAPI
+from core.processor.ip import get_historical_data
 
 router = APIRouter()
+
+
+def _parse_datetime(value: str) -> datetime.datetime:
+    text = str(value)
+    if text.endswith('Z'):
+        text = text[:-1] + '+00:00'
+
+    try:
+        dt = datetime.datetime.fromisoformat(text)
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        return dt
+    except ValueError:
+        pass
+
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+        try:
+            return datetime.datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+
+    raise ValueError(f"Unsupported datetime format: {value}")
 
 
 class PredictRequest(BaseModel):
@@ -38,54 +56,6 @@ class PredictResponse(BaseModel):
     metadata: dict
 
 
-# Helper to get historical data based on asset class
-def get_historical_data(symbol: str, asset_class: str):
-    """Fetch historical data using the appropriate API."""
-    
-    end_date = datetime.datetime.now()
-    start_date = end_date - datetime.timedelta(days=365)  # 1 year of data
-    
-    if asset_class == "equities":
-        result = YFinanceAPI(symbol, start_date=start_date, end_date=end_date)
-    elif asset_class == "crypto":
-        # Binance API
-        result = BinanceAPI(symbol, start_date=start_date, end_date=end_date)
-    elif asset_class in ["forex", "comm"]:
-        # OANDA API for forex and commodities
-        result = OandaAPI(symbol, start_date=start_date, end_date=end_date)
-    else:
-        raise HTTPException(status_code=400, detail=f"Unknown asset class: {asset_class}")
-    
-    if result.get("status") == "error":
-        raise HTTPException(status_code=500, detail=result.get("message", "API error"))
-    
-    return result.get("values", [])
-
-
-@router.get("/history")
-async def get_history(
-    symbol: str = Query(..., description="Symbol to fetch"),
-    asset_class: str = Query(..., description="Asset class: equities, crypto, forex, comm")
-):
-    """Get historical price data for a symbol."""
-    try:
-        values = get_historical_data(symbol, asset_class)
-        
-        # Format for frontend
-        data = [
-            {"timestamp": v["datetime"], "value": v["close"]}
-            for v in values
-            if v.get("close") is not None
-        ]
-        
-        return {"data": data}
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @router.post("/predict", response_model=PredictResponse)
 async def predict(request: PredictRequest):
     """Run model prediction for a symbol."""
@@ -98,14 +68,14 @@ async def predict(request: PredictRequest):
         
         # Get the last price
         last_value = values[-1]
-        last_price = last_value["close"]
-        last_date = datetime.datetime.strptime(last_value["datetime"], "%Y-%m-%d")
+        last_price = float(last_value["close"])
+        last_date = _parse_datetime(last_value["datetime"])
         
         # TODO: Load actual model from models/deepar_{asset_class}.pt
         # For now, generate mock predictions based on historical volatility
         
         # Calculate historical volatility
-        closes = [v["close"] for v in values if v.get("close")]
+        closes = [float(v["close"]) for v in values if v.get("close") is not None]
         if len(closes) > 1:
             returns = [(closes[i] - closes[i-1]) / closes[i-1] for i in range(1, len(closes))]
             volatility = (sum(r**2 for r in returns) / len(returns)) ** 0.5

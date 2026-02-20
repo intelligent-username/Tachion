@@ -4,6 +4,7 @@
   background: rgba(15, 15, 35, 0.6);
   border-radius: 12px;
   overflow: hidden;
+  position: relative;
 }
 
 .chart-container svg {
@@ -24,4 +25,19 @@
 
 .chart-panel h1 {
   margin: 0;
+}
+
+.chart-tooltip {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  background: rgba(7, 11, 24, 0.9);
+  color: #f2f4f8;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }

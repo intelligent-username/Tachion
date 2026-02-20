@@ -25,7 +25,7 @@ INTERVAL_MS = {
 }
 
 
-def call_specific_binance(path, symbols, num_calls, rate_limit=50):
+def call_specific_binance(path, symbols, num_calls, rate_limit=50, json_indent=4):
     """
     Make Specific Calls to the Binance API
 
@@ -108,7 +108,7 @@ def call_specific_binance(path, symbols, num_calls, rate_limit=50):
                         unique_details.append(d)
 
                 with open(file_path, "w") as f:
-                    json.dump(unique_details, f, indent=4)
+                    json.dump(unique_details, f, indent=json_indent)
                 print(f"Wrote {len(unique_details)} records for {symbol} to {file_path}")
             else:
                 print(f"No data collected for {symbol}")
@@ -169,7 +169,7 @@ def call_specific_binance(path, symbols, num_calls, rate_limit=50):
             if new_data:
                 full_data = existing_data + new_data
                 with open(file_path, "w") as f:
-                    json.dump(full_data, f, indent=4)
+                    json.dump(full_data, f, indent=json_indent)
                 print(f"Updated {symbol}: added {len(new_data)} new records (total: {len(full_data)})")
             else:
                 print(f"No updates needed for {symbol}")
@@ -234,11 +234,11 @@ def BinanceAPI(url="https://api.binance.com/api/v3/klines",
 
             values.append({
                 "datetime": dt.strftime("%Y-%m-%d %H:%M:%S"),
-                "open": candle[1],
-                "high": candle[2],
-                "low": candle[3],
-                "close": candle[4],
-                "volume": candle[5]
+                "open": float(candle[1]),
+                "high": float(candle[2]),
+                "low": float(candle[3]),
+                "close": float(candle[4]),
+                "volume": float(candle[5])
             })
 
         return {

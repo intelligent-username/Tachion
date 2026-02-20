@@ -27,7 +27,7 @@ def write_data_fo(instruments):
     # ~175,200 / 5000 = ~35 calls
     num_calls = 35
 
-    call_specific_oanda(str(path), instruments=instruments, num_calls=num_calls)
+    call_specific_oanda(str(path), instruments=instruments, num_calls=num_calls, json_indent=2)
 
     # JSON records are written chronologically (oldest to newest)
 

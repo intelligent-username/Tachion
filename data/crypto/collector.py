@@ -31,7 +31,7 @@ def write_data_cr(symbols):
     # Note that the API limits are WAY higher (6000 weights per minute, aka 100 weights per second. Each call is 2 weights, so 50 calls per second)
     # So we won't HAVE TO wait at all.
 
-    call_specific_binance(str(path), symbols=symbols, num_calls=num_calls)
+    call_specific_binance(str(path), symbols=symbols, num_calls=num_calls, json_indent=2)
 
     # JSON records are written chronologically (oldest to newest)
 

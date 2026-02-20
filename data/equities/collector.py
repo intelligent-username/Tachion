@@ -28,8 +28,8 @@ def write_data_eq(symbols):
     # This is for equities specifically, need ~15k
     num_calls = 3
 
-    call_specific_td(str(path), symbols=["SPY"], num_calls = num_calls)
-    call_specific_td(str(path), symbols=symbols, num_calls = num_calls)
+    call_specific_td(str(path), symbols=["SPY"], num_calls = num_calls, json_indent=2)
+    call_specific_td(str(path), symbols=symbols, num_calls = num_calls, json_indent=2)
 
     # note that the JSON records are written chronologically from newest to oldest
     # In the feature engineering (CSVs), remember to read backwards
