@@ -1,14 +1,39 @@
 // API calls
 const API_BASE = '/api'
 
-// Fetch historical data for a symbol
-export async function fetchHistory(symbol, assetClass) {
-    const params = new URLSearchParams({
-        symbol: symbol,
-        asset_class: assetClass
+// Send search request to backend
+export async function sendSearch(symbol, assetClass, timespan = 'max') {
+    const response = await fetch(`${API_BASE}/search`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            symbol: symbol,
+            type: assetClass,
+            timespan: timespan
+        })
     })
 
-    const response = await fetch(`${API_BASE}/history?${params}`)
+    if (!response.ok) {
+        throw new Error(`Failed to send search request: ${response.statusText}`)
+    }
+
+    return await response.json()
+}
+
+// Fetch historical OHLCV data for a symbol (30m interval expected from backend)
+export async function fetchHistory(symbol, assetClass, timespan = 'max') {
+    const params = new URLSearchParams({
+        symbol: symbol,
+        asset_class: assetClass,
+        timespan: timespan,
+        interval: '30m'
+    })
+
+    const response = await fetch(`${API_BASE}/history?${params.toString()}`, {
+        method: 'GET'
+    })
 
     if (!response.ok) {
         throw new Error(`Failed to fetch history: ${response.statusText}`)

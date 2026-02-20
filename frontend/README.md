@@ -22,4 +22,6 @@ frontend/
   vite.config.js  # Vite config
 ```
 
-<!-- Note to self: do not change this structure, and don't add any files at all to any folders -->
+<!-- Note to self: don't change this structure, and don't add any files at all to any folders -->
+<!-- Reworking this logic will be way too arduous -->
+<!-- Of course if a NEW feature is intentionally added new files are needed anyway -->

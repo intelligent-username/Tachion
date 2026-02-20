@@ -1,0 +1,36 @@
+.footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: rgba(22, 33, 62, 0.9);
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.footer a {
+  color: var(--text-muted);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.github-icon {
+  transition: transform 0.4s ease;
+}
+
+.github-link:hover .github-icon {
+  transform: rotate(360deg);
+}
+
+/* Shared hover glow for interactive UI */
+:is(a, button, .search-icon, .search-result, .search-section input, .search-section select):hover {
+  box-shadow: 0 0 12px rgba(231, 76, 60, 0.35);
+  filter: drop-shadow(0 0 6px rgba(231, 76, 60, 0.45));
+}
+
+button:disabled:hover {
+  box-shadow: none;
+  filter: none;
+}

@@ -6,6 +6,7 @@ import Header from './components/header'
 import Sidebar from './components/sidebar'
 import Graph from './components/graph'
 import Footer from './components/footer'
+import TimespanSelector from './components/timespan-selector'
 import './styles.css'
 
 function App() {
@@ -14,7 +15,10 @@ function App() {
 			<Header />
 			<main className="main-content">
 				<section className="chart-panel">
-					<h2>Asset Trendlines</h2>
+					<div className="chart-header">
+						<h1>Trendlines</h1>
+						<TimespanSelector />
+					</div>
 					<Graph />
 				</section>
 				<aside className="control-panel">

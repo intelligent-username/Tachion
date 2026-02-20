@@ -1,0 +1,110 @@
+@media (max-width: 900px) {
+  .main-content {
+    flex-direction: column;
+  }
+
+  .control-panel {
+    order: -1;
+  }
+
+  .chart-panel,
+  .control-panel {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .sidebar {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .search-section {
+    flex: 1 1 auto;
+  }
+
+  .predict-button {
+    flex: 1 1 150px;
+    width: auto;
+    min-width: 120px;
+    min-height: 60px;
+    padding: clamp(0.7rem, 1.8vw, 1.1rem) clamp(0.85rem, 2.2vw, 1.25rem);
+    margin-top: 0;
+  }
+
+  .chart-header {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+
+  .timespan-selector {
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+  }
+}
+
+@media (max-width: 760px) {
+  .header .date {
+    display: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .chart-header {
+    flex-wrap: wrap;
+  }
+
+  .timespan-selector {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .footer {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .header {
+    padding: 0.75rem 1rem;
+  }
+
+  .header .date {
+    display: none;
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  .chart-panel,
+  .control-panel {
+    flex: 1 1 100%;
+  }
+
+  .chart-container {
+    height: 300px;
+  }
+
+  .predict-button {
+    flex: 1 1 100%;
+    min-width: 0;
+    width: 100%;
+    min-height: 52px;
+    padding: 0.65rem 0.8rem;
+    border-radius: 12px;
+  }
+
+  .button-text {
+    font-size: 1rem;
+  }
+
+  .button-subtitle {
+    font-size: 0.68rem;
+  }
+}

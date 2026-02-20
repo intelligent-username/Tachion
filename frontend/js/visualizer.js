@@ -1,205 +1,267 @@
-// D3.js Chart Visualization with Dynamic Expansion Animation
+// D3.js Chart Visualization (30m OHLCV candlesticks)
 import * as d3 from 'd3'
+
+function parseDateLike(input) {
+    if (input == null) return null
+    const d = input instanceof Date ? input : new Date(input)
+    return Number.isNaN(d.getTime()) ? null : d
+}
+
+function toNumber(value) {
+    const n = Number(value)
+    return Number.isFinite(n) ? n : null
+}
+
+function normalizeCandle(row, previousClose = null) {
+    const date = parseDateLike(
+        row.timestamp ?? row.datetime ?? row.date ?? row.time ?? row.t
+    )
+    if (!date) return null
+
+    const open = toNumber(row.open ?? row.o)
+    const high = toNumber(row.high ?? row.h)
+    const low = toNumber(row.low ?? row.l)
+    const close = toNumber(row.close ?? row.c ?? row.value)
+    const volume = toNumber(row.volume ?? row.v ?? 0) ?? 0
+
+    const fallback = close ?? previousClose
+    if (fallback == null) return null
+
+    const safeOpen = open ?? previousClose ?? fallback
+    const safeClose = close ?? safeOpen
+    const safeHigh = high ?? Math.max(safeOpen, safeClose)
+    const safeLow = low ?? Math.min(safeOpen, safeClose)
+
+    return {
+        date,
+        open: safeOpen,
+        high: Math.max(safeHigh, safeOpen, safeClose),
+        low: Math.min(safeLow, safeOpen, safeClose),
+        close: safeClose,
+        volume
+    }
+}
+
+function clampCandlesByTimespan(candles, timespan) {
+    if (!candles.length || !timespan || timespan === 'max') return candles
+
+    const sorted = [...candles].sort((a, b) => a.date - b.date)
+    const end = sorted[sorted.length - 1].date
+    let start = null
+
+    if (timespan === 'ytd') {
+        start = new Date(end.getFullYear(), 0, 1)
+    } else {
+        const dayMatch = String(timespan).match(/^(\d+)d$/)
+        const monthMatch = String(timespan).match(/^(\d+)m$/i)
+        const yearMatch = String(timespan).match(/^(\d+)y$/i)
+
+        if (dayMatch) {
+            start = new Date(end)
+            start.setDate(start.getDate() - Number(dayMatch[1]))
+        } else if (monthMatch) {
+            start = new Date(end)
+            start.setMonth(start.getMonth() - Number(monthMatch[1]))
+        } else if (yearMatch) {
+            start = new Date(end)
+            start.setFullYear(start.getFullYear() - Number(yearMatch[1]))
+        }
+    }
+
+    if (!start) return sorted
+
+    const clamped = sorted.filter(d => d.date >= start && d.date <= end)
+    return clamped.length > 1 ? clamped : sorted.slice(-2)
+}
 
 export class TachionChart {
     constructor(container) {
         this.container = container
-        this.margin = { top: 20, right: 80, bottom: 30, left: 60 }
+        this.margin = { top: 18, right: 18, bottom: 26, left: 54 }
         this.currentData = []
-
-        // Get dimensions
-        const rect = container.getBoundingClientRect()
-        this.width = rect.width - this.margin.left - this.margin.right
-        this.height = 350 - this.margin.top - this.margin.bottom
+        this.lastTimespan = 'max'
+        this.upColor = '#27ae60'
+        this.downColor = '#e74c3c'
 
         // Clear any existing content
         d3.select(container).selectAll('*').remove()
 
-        // Create SVG
-        this.svg = d3.select(container)
+        // Create responsive SVG that fills the chart container
+        this.rootSvg = d3.select(container)
             .append('svg')
-            .attr('width', this.width + this.margin.left + this.margin.right)
-            .attr('height', this.height + this.margin.top + this.margin.bottom)
-            .append('g')
+            .attr('class', 'tick-chart-svg')
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .attr('preserveAspectRatio', 'none')
+
+        this.svg = this.rootSvg.append('g')
             .attr('transform', `translate(${this.margin.left},${this.margin.top})`)
 
         // Initialize scales
-        this.xScale = d3.scaleTime().range([0, this.width])
-        this.yScale = d3.scaleLinear().range([this.height, 0])
+        this.xScale = d3.scaleTime()
+        this.yScale = d3.scaleLinear()
 
-        // Create axis groups
-        this.xAxis = this.svg.append('g')
+        this.gridLayer = this.svg.append('g').attr('class', 'grid-layer')
+        this.candleLayer = this.svg.append('g').attr('class', 'candle-layer')
+        this.overlayLayer = this.svg.append('g').attr('class', 'overlay-layer')
+
+        this.xAxis = this.overlayLayer.append('g')
             .attr('class', 'x-axis')
-            .attr('transform', `translate(0,${this.height})`)
 
-        this.yAxis = this.svg.append('g')
+        this.yAxis = this.overlayLayer.append('g')
             .attr('class', 'y-axis')
 
-        // Create path elements
-        this.confidenceArea = this.svg.append('path')
-            .attr('class', 'confidence-area')
-            .attr('fill', 'rgba(100, 100, 100, 0.3)')
-            .attr('opacity', 0)
-
-        this.historyLine = this.svg.append('path')
-            .attr('class', 'history-line')
-            .attr('fill', 'none')
-            .attr('stroke', '#e74c3c')
-            .attr('stroke-width', 2)
-
-        this.predictionLine = this.svg.append('path')
+        this.predictionLine = this.overlayLayer.append('path')
             .attr('class', 'prediction-line')
             .attr('fill', 'none')
-            .attr('stroke', '#27ae60')
-            .attr('stroke-width', 2)
-            .attr('stroke-dasharray', '5,5')
+            .attr('stroke', 'rgba(114, 137, 218, 0.95)')
+            .attr('stroke-width', 1.5)
+            .attr('stroke-dasharray', '3,3')
             .attr('opacity', 0)
 
-        // Prediction area label
-        this.predictionLabel = this.svg.append('text')
-            .attr('class', 'prediction-label')
-            .attr('text-anchor', 'middle')
-            .attr('fill', '#666')
-            .attr('font-size', '12px')
-            .attr('opacity', 0)
-            .text('Prediction area')
+        this.resizeObserver = new ResizeObserver(() => {
+            this.resize()
+            if (this.currentData.length) {
+                this.drawCandles(this.currentData)
+            }
+        })
+        this.resizeObserver.observe(container)
+
+        this.resize()
     }
 
-    // Render historical data
-    renderHistory(data) {
-        // Parse data
-        this.currentData = data.map(d => ({
-            date: new Date(d.timestamp),
-            value: d.value
-        }))
+    resize() {
+        const rect = this.container.getBoundingClientRect()
+        const fullWidth = Math.max(180, rect.width)
+        const fullHeight = Math.max(200, rect.height)
 
-        // Update scales
-        const xExtent = d3.extent(this.currentData, d => d.date)
-        const yExtent = d3.extent(this.currentData, d => d.value)
-        const yPadding = (yExtent[1] - yExtent[0]) * 0.1
+        this.width = Math.max(80, fullWidth - this.margin.left - this.margin.right)
+        this.height = Math.max(80, fullHeight - this.margin.top - this.margin.bottom)
 
-        this.xScale.domain(xExtent)
-        this.yScale.domain([yExtent[0] - yPadding, yExtent[1] + yPadding])
+        this.rootSvg.attr('viewBox', `0 0 ${fullWidth} ${fullHeight}`)
 
-        // Update axes
-        this.xAxis.call(d3.axisBottom(this.xScale))
-        this.yAxis.call(d3.axisLeft(this.yScale))
+        this.svg.attr('transform', `translate(${this.margin.left},${this.margin.top})`)
+        this.xScale.range([0, this.width])
+        this.yScale.range([this.height, 0])
+        this.xAxis.attr('transform', `translate(0,${this.height})`)
+    }
 
-        // Line generator
-        const lineGenerator = d3.line()
-            .x(d => this.xScale(d.date))
-            .y(d => this.yScale(d.value))
+    // Render historical candles from backend OHLCV (30m expected)
+    renderHistory(data, timespan = 'max') {
+        let previousClose = null
+        const normalized = (data ?? [])
+            .map(row => {
+                const candle = normalizeCandle(row, previousClose)
+                if (candle) previousClose = candle.close
+                return candle
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.date - b.date)
 
-        // Draw history line
-        this.historyLine
-            .datum(this.currentData)
-            .attr('d', lineGenerator)
+        this.lastTimespan = timespan
+        this.currentData = clampCandlesByTimespan(normalized, timespan)
+        this.drawCandles(this.currentData)
+    }
 
-        // Reset prediction elements
+    drawCandles(candles) {
+        if (!candles.length) {
+            this.candleLayer.selectAll('*').remove()
+            this.gridLayer.selectAll('*').remove()
+            this.xAxis.selectAll('*').remove()
+            this.yAxis.selectAll('*').remove()
+            this.predictionLine.attr('opacity', 0)
+            return
+        }
+
+        const xDomain = d3.extent(candles, d => d.date)
+        const lows = candles.map(d => d.low)
+        const highs = candles.map(d => d.high)
+        const yMin = d3.min(lows)
+        const yMax = d3.max(highs)
+        const ySpan = Math.max(1e-9, yMax - yMin)
+        const yPad = ySpan * 0.08
+
+        this.xScale.domain(xDomain)
+        this.yScale.domain([yMin - yPad, yMax + yPad])
+
+        const xAxis = d3.axisBottom(this.xScale).ticks(6)
+        const yAxis = d3.axisLeft(this.yScale).ticks(6)
+
+        this.xAxis.call(xAxis)
+        this.yAxis.call(yAxis)
+
+        this.xAxis.selectAll('path,line').attr('stroke', 'rgba(255,255,255,0.2)')
+        this.yAxis.selectAll('path,line').attr('stroke', 'rgba(255,255,255,0.2)')
+        this.xAxis.selectAll('text').attr('fill', 'rgba(238,238,238,0.75)').style('font-size', '10px')
+        this.yAxis.selectAll('text').attr('fill', 'rgba(238,238,238,0.75)').style('font-size', '10px')
+
+        const yGrid = d3.axisLeft(this.yScale).ticks(6).tickSize(-this.width).tickFormat('')
+        this.gridLayer.call(yGrid)
+        this.gridLayer.selectAll('line').attr('stroke', 'rgba(255,255,255,0.08)')
+        this.gridLayer.selectAll('path').attr('stroke', 'transparent')
+
+        const minSpacingPx = candles.length > 1
+            ? d3.min(candles.slice(1).map((d, i) => this.xScale(d.date) - this.xScale(candles[i].date)))
+            : this.width
+        const bodyWidth = Math.max(2, Math.min(14, (minSpacingPx || this.width) * 0.7))
+
+        const candle = this.candleLayer
+            .selectAll('g.candle')
+            .data(candles, d => d.date.toISOString())
+
+        candle.exit().remove()
+
+        const candleEnter = candle.enter()
+            .append('g')
+            .attr('class', 'candle')
+
+        candleEnter.append('line').attr('class', 'wick')
+        candleEnter.append('rect').attr('class', 'body')
+
+        const merged = candleEnter.merge(candle)
+
+        merged.select('line.wick')
+            .attr('x1', d => this.xScale(d.date))
+            .attr('x2', d => this.xScale(d.date))
+            .attr('y1', d => this.yScale(d.high))
+            .attr('y2', d => this.yScale(d.low))
+            .attr('stroke-width', 1)
+            .attr('stroke', d => (d.close >= d.open ? this.upColor : this.downColor))
+
+        merged.select('rect.body')
+            .attr('x', d => this.xScale(d.date) - bodyWidth / 2)
+            .attr('width', bodyWidth)
+            .attr('y', d => this.yScale(Math.max(d.open, d.close)))
+            .attr('height', d => Math.max(1, Math.abs(this.yScale(d.open) - this.yScale(d.close))))
+            .attr('fill', d => (d.close >= d.open ? this.upColor : this.downColor))
+            .attr('opacity', 0.95)
+
         this.predictionLine.attr('opacity', 0)
-        this.confidenceArea.attr('opacity', 0)
-        this.predictionLabel.attr('opacity', 0)
     }
 
-    // Animate prediction - THE DYNAMIC EXPANSION
+    // Keep prediction support as a lightweight close-price overlay
     animatePrediction(prediction) {
         if (!this.currentData.length) return
 
-        const lastHistoryPoint = this.currentData[this.currentData.length - 1]
+        const last = this.currentData[this.currentData.length - 1]
+        const predictionData = (prediction?.timestamps ?? []).map((t, i) => ({
+            date: parseDateLike(t),
+            close: toNumber(prediction?.medians?.[i])
+        })).filter(d => d.date && d.close != null)
 
-        // Parse prediction data
-        const predictionDates = prediction.timestamps.map(t => new Date(t))
-        const newMaxDate = predictionDates[predictionDates.length - 1]
+        if (!predictionData.length) {
+            this.predictionLine.attr('opacity', 0)
+            return
+        }
 
-        // Calculate new Y domain including confidence intervals
-        const allValues = [
-            ...this.currentData.map(d => d.value),
-            ...prediction.upper_95s,
-            ...prediction.lower_95s
-        ]
-        const yExtent = d3.extent(allValues)
-        const yPadding = (yExtent[1] - yExtent[0]) * 0.1
+        const pathData = [{ date: last.date, close: last.close }, ...predictionData]
+        const line = d3.line()
+            .x(d => this.xScale(d.date))
+            .y(d => this.yScale(d.close))
 
-        // Step 1: Calculate new X domain
-        const newXScale = d3.scaleTime()
-            .domain([this.xScale.domain()[0], newMaxDate])
-            .range([0, this.width])
-
-        // Step 2: Animate X-axis expansion (750ms)
-        this.xAxis.transition()
-            .duration(750)
-            .call(d3.axisBottom(newXScale))
-
-        // Update Y scale
-        this.yScale.domain([yExtent[0] - yPadding, yExtent[1] + yPadding])
-        this.yAxis.transition()
-            .duration(750)
-            .call(d3.axisLeft(this.yScale))
-
-        // Line generator with new scale
-        const lineGenerator = d3.line()
-            .x(d => newXScale(d.date))
-            .y(d => this.yScale(d.value))
-
-        // Step 3: Compress historical line
-        this.historyLine.transition()
-            .duration(750)
-            .attr('d', lineGenerator(this.currentData))
-
-        // Prepare prediction data points
-        const predictionData = prediction.timestamps.map((t, i) => ({
-            date: new Date(t),
-            value: prediction.medians[i]
-        }))
-
-        // Full prediction path including connection point
-        const fullPredictionPath = [
-            { date: lastHistoryPoint.date, value: lastHistoryPoint.value },
-            ...predictionData
-        ]
-
-        // Confidence interval data
-        const ciData = prediction.timestamps.map((t, i) => ({
-            date: new Date(t),
-            lower: prediction.lower_95s[i],
-            upper: prediction.upper_95s[i]
-        }))
-
-        // Area generator for confidence interval
-        const areaGenerator = d3.area()
-            .x(d => newXScale(d.date))
-            .y0(d => this.yScale(d.lower))
-            .y1(d => this.yScale(d.upper))
-
-        // Step 4: Draw prediction line (fade in after axis animation)
         this.predictionLine
-            .datum(fullPredictionPath)
-            .attr('d', lineGenerator)
-            .transition()
-            .delay(750)
-            .duration(500)
+            .datum(pathData)
+            .attr('d', line)
             .attr('opacity', 1)
-
-        // Step 5: Draw confidence interval area (fade in)
-        this.confidenceArea
-            .datum(ciData)
-            .attr('d', areaGenerator)
-            .transition()
-            .delay(750)
-            .duration(500)
-            .attr('opacity', 1)
-
-        // Show prediction label
-        const labelX = newXScale(predictionDates[Math.floor(predictionDates.length / 2)])
-        this.predictionLabel
-            .attr('x', labelX)
-            .attr('y', 15)
-            .transition()
-            .delay(750)
-            .duration(500)
-            .attr('opacity', 1)
-
-        // Update stored scale
-        this.xScale = newXScale
     }
 }
