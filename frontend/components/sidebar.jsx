@@ -9,16 +9,45 @@ export default function Sidebar() {
     const { currentSymbol, timespan, isLoading, setAsset, runPrediction } = useAppState()
     const isSearchEmpty = !searchTerm.trim()
 
-    const sanitizeSymbol = (value) => value.trim().replace(/^\$+/, '')
+    const sanitizeSymbol = (value, cls = assetClass) => {
+        let symbol = value.trim().replace(/^\$+/, '')
+        if (!symbol) return ''
+
+        if (cls === 'crypto') {
+            symbol = symbol.toUpperCase().replace(/[\/_-]?USD[T]?$/i, '')
+            return symbol
+        }
+
+        if (cls === 'forex' || cls === 'comm') {
+            const aliases = {
+                GOLD: 'XAU_USD',
+                SILVER: 'XAG_USD',
+                OIL: 'WTICO_USD',
+                WTI: 'WTICO_USD',
+                BRENT: 'BCO_USD',
+                CRUDE: 'WTICO_USD',
+            }
+
+            symbol = symbol.toUpperCase().replace(/[\/-]/g, '_')
+            if (aliases[symbol]) return aliases[symbol]
+
+            if (/^[A-Z]{6}$/.test(symbol)) {
+                return `${symbol.slice(0, 3)}_${symbol.slice(3)}`
+            }
+            return symbol
+        }
+
+        return symbol.toUpperCase()
+    }
 
     const handleSearch = () => {
-        const symbol = sanitizeSymbol(searchTerm)
+        const symbol = sanitizeSymbol(searchTerm, assetClass)
         if (!symbol) return
         setAsset(symbol, assetClass, timespan)
     }
 
     const handlePredict = () => {
-        const symbolToUse = sanitizeSymbol(searchTerm) || currentSymbol
+        const symbolToUse = sanitizeSymbol(searchTerm, assetClass) || currentSymbol
         runPrediction(7, {
             symbol: symbolToUse,
             assetClass,
@@ -30,8 +59,8 @@ export default function Sidebar() {
     const placeholders = {
         'equities': 'e.g. NVDA',
         'crypto': 'e.g. ETH',
-        'forex': 'e.g. EUR_USD',
-        'comm': 'e.g. GOLD',
+        'forex': 'e.g. EUR_USD or EUR/USD',
+        'comm': 'e.g. XAU_USD (Gold), WTICO_USD',
         'interest': ''
     }
 

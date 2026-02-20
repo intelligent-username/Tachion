@@ -10,8 +10,6 @@ This Script handles:
 from __future__ import annotations
 
 import datetime
-import json
-import re
 from pathlib import Path
 from threading import Lock
 
@@ -22,19 +20,28 @@ from core.apis.biapi import BinanceAPI
 from core.apis.oaapi import OandaAPI
 from core.apis.tdapi import TwelveDataAPI
 from core.apis.yfapi import YFinanceAPI
+from core.apis.biapi import call_specific_binance
+from core.apis.oaapi import call_specific_oanda
+from core.apis.tdapi import call_specific_td
 from core.processor.dw import add_crypto_date_features, add_date_features
+from core.processor.history_utils import (
+	effective_history_end as _effective_history_end,
+	format_ohlcv,
+	merge_values as _merge_values,
+	normalize_asset_symbol,
+	normalize_interval,
+	normalize_ohlcv_row as _normalize_ohlcv_row,
+	normalize_symbol as _normalize_symbol,
+	parse_timespan_to_days,
+	parse_timestamp,
+	raw_file_path as _raw_file_path,
+	read_raw_data,
+	slice_values_by_timespan,
+	write_raw_data,
+)
 from core.processor.lr import log_return, volume_change
 from core.processor.ma import moving_average
 from core.processor.rv import rolling_volatility
-
-DATA_ROOT = Path(__file__).resolve().parent.parent.parent / 'data'
-ASSET_TO_DATA_DIR = {
-	'equities': 'equities',
-	'crypto': 'crypto',
-	'forex': 'forex',
-	'comm': 'comm',
-	'interest': 'interest',
-}
 
 # In-memory cache for ticker-specific preprocessed data.
 PREPROCESSED_CACHE: dict[str, dict] = {}
@@ -52,180 +59,11 @@ class InferenceProcessorError(Exception):
 		self.status_code = status_code
 
 
-def _normalize_symbol(symbol: str) -> str:
-	text = (symbol or '').strip()
-	if text.startswith('$'):
-		text = text[1:]
-	return text
-
-
-def normalize_interval(interval: str) -> str:
-	if not interval:
-		return '30m'
-	normalized = interval.strip().lower()
-	return '30m' if normalized in {'30m', '30min', 'm30'} else '30m'
-
-
-def parse_timespan_to_days(timespan: str | None) -> float:
-	if not timespan or timespan == 'max':
-		return 60
-	if timespan == 'ytd':
-		now = datetime.datetime.now()
-		return max(1, (now - datetime.datetime(now.year, 1, 1)).days)
-
-	text = str(timespan).strip().lower()
-	hour_match = re.match(r'^(\d+)h$', text)
-	day_match = re.match(r'^(\d+)d$', text)
-	month_match = re.match(r'^(\d+)m$', text)
-	year_match = re.match(r'^(\d+)y$', text)
-
-	if hour_match:
-		return max(1, int(hour_match.group(1))) / 24
-	if day_match:
-		return max(1, int(day_match.group(1)))
-	if month_match:
-		return max(1, int(month_match.group(1)) * 30)
-	if year_match:
-		return max(1, int(year_match.group(1)) * 365)
-	return 60
-
-
-def _to_float(value, default=0.0):
-	try:
-		if value is None:
-			return float(default)
-		return float(value)
-	except (TypeError, ValueError):
-		return float(default)
-
-
-def parse_timestamp(ts) -> datetime.datetime | None:
-	if ts is None:
-		return None
-
-	if isinstance(ts, datetime.datetime):
-		return ts
-
-	text = str(ts).strip()
-	if not text:
-		return None
-
-	if text.endswith('Z'):
-		text = text[:-1] + '+00:00'
-
-	try:
-		dt = datetime.datetime.fromisoformat(text)
-		if dt.tzinfo is not None:
-			dt = dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-		return dt
-	except ValueError:
-		pass
-
-	for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d'):
-		try:
-			return datetime.datetime.strptime(text, fmt)
-		except ValueError:
-			continue
-
-	return None
-
-
-def _normalize_timestamp_str(ts) -> str | None:
-	dt = parse_timestamp(ts)
-	if dt is None:
-		return None
-	return dt.strftime('%Y-%m-%d %H:%M:%S')
-
-
-def _normalize_ohlcv_row(row: dict) -> dict | None:
-	timestamp = row.get('datetime') or row.get('timestamp') or row.get('date') or row.get('time')
-	timestamp = _normalize_timestamp_str(timestamp)
-	if timestamp is None:
-		return None
-
-	close_f = _to_float(row.get('close', row.get('value', None)), np.nan)
-	if np.isnan(close_f):
-		return None
-
-	open_f = _to_float(row.get('open', close_f), close_f)
-	high_f = _to_float(row.get('high', max(open_f, close_f)), max(open_f, close_f))
-	low_f = _to_float(row.get('low', min(open_f, close_f)), min(open_f, close_f))
-	volume_f = _to_float(row.get('volume', 0.0), 0.0)
-
-	return {
-		'datetime': timestamp,
-		'open': open_f,
-		'high': max(high_f, open_f, close_f),
-		'low': min(low_f, open_f, close_f),
-		'close': close_f,
-		'volume': volume_f,
-	}
-
-
-def read_raw_data(path: Path) -> list[dict]:
-	if not path.exists():
-		return []
-	try:
-		with path.open('r', encoding='utf-8') as f:
-			rows = json.load(f)
-		if not isinstance(rows, list):
-			return []
-		normalized = []
-		for row in rows:
-			if not isinstance(row, dict):
-				continue
-			n = _normalize_ohlcv_row(row)
-			if n is not None:
-				normalized.append(n)
-		normalized.sort(key=lambda r: r['datetime'])
-		return normalized
-	except Exception:
-		return []
-
-
-def write_raw_data(path: Path, values: list[dict]) -> None:
-	path.parent.mkdir(parents=True, exist_ok=True)
-	with path.open('w', encoding='utf-8') as f:
-		json.dump(values, f, indent=2)
-
-
 def raw_file_path(asset_class: str, symbol: str) -> Path:
-	asset_key = (asset_class or '').strip().lower()
-	if asset_key not in ASSET_TO_DATA_DIR:
-		raise InferenceProcessorError(f'Unknown asset class: {asset_class}', status_code=400)
-
-	ticker_name = _normalize_symbol(symbol).replace('/', '_')
-	if not ticker_name:
-		raise InferenceProcessorError('Missing symbol/ticker', status_code=400)
-
-	return DATA_ROOT / ASSET_TO_DATA_DIR[asset_key] / 'raw' / f'{ticker_name}.json'
-
-
-def format_ohlcv(values: list[dict]) -> list[dict]:
-	formatted = []
-	for v in values:
-		timestamp = v.get('datetime') or v.get('timestamp') or v.get('date')
-		close = v.get('close', v.get('value'))
-		if timestamp is None or close is None:
-			continue
-
-		close_f = _to_float(close, 0.0)
-		open_f = _to_float(v.get('open', close_f), close_f)
-		high_f = _to_float(v.get('high', max(open_f, close_f)), max(open_f, close_f))
-		low_f = _to_float(v.get('low', min(open_f, close_f)), min(open_f, close_f))
-		volume_f = _to_float(v.get('volume', 0), 0.0)
-
-		formatted.append({
-			'timestamp': str(timestamp),
-			'open': open_f,
-			'high': max(high_f, open_f, close_f),
-			'low': min(low_f, open_f, close_f),
-			'close': close_f,
-			'volume': volume_f,
-			'value': close_f,
-		})
-
-	return formatted
+	try:
+		return _raw_file_path(asset_class, symbol)
+	except ValueError as e:
+		raise InferenceProcessorError(str(e), status_code=400) from e
 
 
 def _fetch_from_yahoo(symbol: str, start_date: datetime.datetime, end_date: datetime.datetime, interval: str) -> dict:
@@ -256,49 +94,6 @@ def _fetch_from_twelvedata(symbol: str, start_date: datetime.datetime, end_date:
 		return {'status': 'error', 'message': raw.get('message') or raw.get('status') or 'Unknown TwelveData error'}
 
 	return {'status': 'error', 'message': 'Unexpected TwelveData response'}
-
-
-def slice_values_by_timespan(values: list[dict], timespan: str, buffer_days: int = 0) -> list[dict]:
-	if not values:
-		return []
-
-	parsed = []
-	for v in values:
-		dt = parse_timestamp(v.get('datetime') or v.get('timestamp') or v.get('date'))
-		if dt is None:
-			continue
-		parsed.append((dt, v))
-
-	if not parsed:
-		return []
-
-	parsed.sort(key=lambda x: x[0])
-	if not timespan or timespan == 'max':
-		if buffer_days <= 0:
-			return [v for _, v in parsed]
-		end = parsed[-1][0]
-		start = end - datetime.timedelta(days=buffer_days)
-		return [v for dt, v in parsed if dt >= start]
-
-	end_dt = parsed[-1][0]
-	days = parse_timespan_to_days(timespan) + max(0, buffer_days)
-	start_dt = end_dt - datetime.timedelta(days=days)
-	sliced = [v for dt, v in parsed if start_dt <= dt <= end_dt]
-	return sliced if sliced else [v for _, v in parsed]
-
-
-def _merge_values(existing: list[dict], incoming: list[dict]) -> list[dict]:
-	merged: dict[str, dict] = {}
-	for row in existing:
-		n = _normalize_ohlcv_row(row)
-		if n is not None:
-			merged[n['datetime']] = n
-	for row in incoming:
-		n = _normalize_ohlcv_row(row)
-		if n is not None:
-			merged[n['datetime']] = n
-	ordered_keys = sorted(merged.keys())
-	return [merged[k] for k in ordered_keys]
 
 
 def _fetch_incremental_values(
@@ -347,6 +142,86 @@ def _fetch_incremental_values(
 	if not isinstance(values, list):
 		return []
 	return values
+
+
+def _fetch_range_with_pagination(
+	symbol: str,
+	asset_class: str,
+	start_date: datetime.datetime,
+	end_date: datetime.datetime,
+	interval: str,
+	max_pages: int = 24,
+) -> list[dict]:
+	"""Fetch [start_date, end_date] with pagination using provider-specific page limits."""
+	if start_date >= end_date:
+		return []
+
+	step = datetime.timedelta(minutes=30)
+	cursor = start_date
+	merged: dict[str, dict] = {}
+
+	for _ in range(max_pages):
+		if cursor >= end_date:
+			break
+
+		batch = _fetch_incremental_values(symbol, asset_class, cursor, end_date, interval)
+		if not batch:
+			break
+
+		normalized_batch = []
+		for row in batch:
+			n = _normalize_ohlcv_row(row if isinstance(row, dict) else {})
+			if n is None:
+				continue
+			dt = parse_timestamp(n['datetime'])
+			if dt is None:
+				continue
+			if cursor <= dt <= end_date:
+				normalized_batch.append((dt, n))
+
+		if not normalized_batch:
+			break
+
+		normalized_batch.sort(key=lambda x: x[0])
+		for _, row in normalized_batch:
+			merged[row['datetime']] = row
+
+		newest_dt = normalized_batch[-1][0]
+		if newest_dt <= cursor:
+			break
+
+		cursor = newest_dt + step
+
+		# If we reached (or effectively reached) requested end, stop.
+		if newest_dt >= (end_date - step):
+			break
+
+	ordered = sorted(merged.keys())
+	return [merged[k] for k in ordered]
+
+
+def _collect_fresh_symbol_history(raw_path: Path, symbol: str, asset_class: str) -> list[dict]:
+	"""Reuse collector/core-api pagination defaults for first-time symbols."""
+	asset = (asset_class or '').strip().lower()
+	out_dir = str(raw_path.parent)
+
+	if asset == 'equities':
+		# Same collector strategy: TwelveData paginated calls.
+		call_specific_td(out_dir, symbols=[symbol], num_calls=3, json_indent=2)
+	elif asset == 'crypto':
+		# Same collector strategy: Binance deep pagination.
+		call_specific_binance(out_dir, symbols=[symbol], num_calls=87, json_indent=2)
+	elif asset == 'forex':
+		# Same collector strategy: OANDA pagination.
+		call_specific_oanda(out_dir, instruments=[symbol], num_calls=35, json_indent=2)
+	elif asset == 'comm':
+		# Same collector strategy: OANDA pagination.
+		call_specific_oanda(out_dir, instruments=[symbol], num_calls=36, json_indent=2)
+	else:
+		# Interest and unknown assets stay on normal incremental path.
+		return []
+
+	return read_raw_data(raw_path)
 
 
 def _build_preprocessed_frame(asset_class: str, symbol: str, rows: list[dict]) -> pd.DataFrame:
@@ -440,10 +315,11 @@ def background_preprocess_ticker(asset_class: str, symbol: str, full_rows: list[
 
 
 def get_historical_data(symbol: str, asset_class: str, timespan: str = 'max', interval: str = '30m') -> list[dict]:
-	"""Update raw file from last stored point to now and return full normalized rows."""
-	symbol = _normalize_symbol(symbol)
+	"""Update raw file from last stored point to effective market end and return normalized rows."""
+	symbol = normalize_asset_symbol(asset_class, symbol)
 	raw_path = raw_file_path(asset_class, symbol)
 	cache_key = f"{(asset_class or '').strip().lower()}:{(symbol or '').strip()}"
+	file_existed = raw_path.exists()
 	with RAW_HISTORY_LOCK:
 		cached = RAW_HISTORY_CACHE.get(cache_key)
 
@@ -457,27 +333,74 @@ def get_historical_data(symbol: str, asset_class: str, timespan: str = 'max', in
 				'loaded_at': datetime.datetime.utcnow(),
 			}
 
-	now = datetime.datetime.now()
+	now = _effective_history_end(asset_class, datetime.datetime.now())
+	requested_days = max(1, parse_timespan_to_days(timespan))
+	requested_start = now - datetime.timedelta(days=requested_days)
+	step = datetime.timedelta(minutes=30)
 	last_dt = parse_timestamp(existing_values[-1].get('datetime')) if existing_values else None
-	should_refresh = (last_dt is None) or ((now - last_dt) >= datetime.timedelta(minutes=25))
-	if not should_refresh:
+	first_dt = parse_timestamp(existing_values[0].get('datetime')) if existing_values else None
+
+	is_fresh_symbol = (not file_existed) and (cached is None) and (not existing_values)
+
+	needs_forward_refresh = (last_dt is None) or ((now - last_dt) >= datetime.timedelta(minutes=25))
+	needs_backfill = (first_dt is None) or (first_dt > (requested_start + step))
+
+	if not needs_forward_refresh and not needs_backfill:
 		return existing_values
 
-	if existing_values:
-		start_date = (last_dt + datetime.timedelta(minutes=30)) if last_dt else (now - datetime.timedelta(days=30))
-	else:
-		bootstrap_days = max(1, parse_timespan_to_days(timespan))
-		start_date = now - datetime.timedelta(days=bootstrap_days)
+	merged_values = existing_values
 
-	try:
-		incoming_values = _fetch_incremental_values(symbol, asset_class, start_date, now, interval)
-	except InferenceProcessorError:
-		if existing_values:
-			return existing_values
-		raise
-	merged_values = _merge_values(existing_values, incoming_values)
+	# Fresh symbol bootstrap: reuse collector/core-api pagination once.
+	if is_fresh_symbol:
+		try:
+			bootstrapped = _collect_fresh_symbol_history(raw_path, symbol, asset_class)
+		except Exception:
+			bootstrapped = []
 
-	if merged_values:
+		if bootstrapped:
+			merged_values = _merge_values(merged_values, bootstrapped)
+			first_dt = parse_timestamp(merged_values[0].get('datetime')) if merged_values else first_dt
+			last_dt = parse_timestamp(merged_values[-1].get('datetime')) if merged_values else last_dt
+			needs_backfill = (first_dt is None) or (first_dt > (requested_start + step))
+			needs_forward_refresh = (last_dt is None) or ((now - last_dt) >= datetime.timedelta(minutes=25))
+
+	# Backfill for expanded timespan requests when earliest cached point is too recent.
+	if needs_backfill:
+		if first_dt is not None:
+			backfill_end = first_dt - step
+		else:
+			backfill_end = now
+
+		if requested_start < backfill_end:
+			try:
+				backfill_values = _fetch_range_with_pagination(symbol, asset_class, requested_start, backfill_end, interval)
+			except InferenceProcessorError:
+				backfill_values = []
+
+			if backfill_values:
+				merged_values = _merge_values(merged_values, backfill_values)
+
+	# Forward incremental refresh for latest candles.
+	if needs_forward_refresh:
+		if merged_values:
+			latest_dt = parse_timestamp(merged_values[-1].get('datetime'))
+			start_date = (latest_dt + step) if latest_dt else (now - datetime.timedelta(days=requested_days))
+		else:
+			start_date = requested_start
+
+		if start_date < now:
+			try:
+				incoming_values = _fetch_range_with_pagination(symbol, asset_class, start_date, now, interval)
+			except InferenceProcessorError:
+				if merged_values:
+					incoming_values = []
+				else:
+					raise
+
+			if incoming_values:
+				merged_values = _merge_values(merged_values, incoming_values)
+
+	if merged_values and merged_values != existing_values:
 		write_raw_data(raw_path, merged_values)
 		with RAW_HISTORY_LOCK:
 			RAW_HISTORY_CACHE[cache_key] = {

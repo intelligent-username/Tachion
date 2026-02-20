@@ -12,6 +12,7 @@ const initialState = {
     predictionData: null,
     searchedHistory: {},
     isLoading: false,
+    loadingMessage: null,
     error: null
 }
 
@@ -30,6 +31,7 @@ export function StateProvider({ children }) {
             assetClass: assetClass,
             timespan,
             isLoading: true,
+            loadingMessage: 'Collecting Data...',
             error: null,
             predictionData: null
         }))
@@ -45,13 +47,15 @@ export function StateProvider({ children }) {
                     ...prev.searchedHistory,
                     [key]: true
                 },
-                isLoading: false
+                isLoading: false,
+                loadingMessage: null
             }))
         } catch (err) {
             setState(prev => ({
                 ...prev,
                 error: err.message,
-                isLoading: false
+                isLoading: false,
+                loadingMessage: null
             }))
         }
     }, [state.timespan])
@@ -73,6 +77,7 @@ export function StateProvider({ children }) {
             assetClass: targetAssetClass,
             timespan: targetTimespan,
             isLoading: true,
+            loadingMessage: 'Loading...',
             error: null
         }))
 
@@ -98,13 +103,15 @@ export function StateProvider({ children }) {
             setState(prev => ({
                 ...prev,
                 predictionData: prediction,
-                isLoading: false
+                isLoading: false,
+                loadingMessage: null
             }))
         } catch (err) {
             setState(prev => ({
                 ...prev,
                 error: err.message,
-                isLoading: false
+                isLoading: false,
+                loadingMessage: null
             }))
         }
     }, [state.currentSymbol, state.assetClass, state.timespan, state.searchedHistory])
@@ -115,20 +122,23 @@ export function StateProvider({ children }) {
 
         const targetSymbol = state.currentSymbol
         const targetAssetClass = state.assetClass
+        const key = `${targetAssetClass}:${targetSymbol}:${timespan}`
+        const wasSearched = !!(targetSymbol && targetAssetClass && state.searchedHistory[key])
 
         setState(prev => ({
             ...prev,
             timespan,
             error: null,
-            isLoading: !!(targetSymbol && targetAssetClass)
+            isLoading: !!(targetSymbol && targetAssetClass),
+            loadingMessage: (targetSymbol && targetAssetClass)
+                ? (wasSearched ? 'Loading...' : 'Collecting Data...')
+                : null
         }))
 
         if (!targetSymbol || !targetAssetClass) return
 
         try {
             const data = await fetchHistory(targetSymbol, targetAssetClass, timespan)
-            const key = `${targetAssetClass}:${targetSymbol}:${timespan}`
-
             setState(prev => ({
                 ...prev,
                 historicalData: data,
@@ -136,16 +146,18 @@ export function StateProvider({ children }) {
                     ...prev.searchedHistory,
                     [key]: true
                 },
-                isLoading: false
+                isLoading: false,
+                loadingMessage: null
             }))
         } catch (err) {
             setState(prev => ({
                 ...prev,
                 error: err.message,
-                isLoading: false
+                isLoading: false,
+                loadingMessage: null
             }))
         }
-    }, [state.currentSymbol, state.assetClass])
+    }, [state.currentSymbol, state.assetClass, state.searchedHistory])
 
     const value = {
         ...state,

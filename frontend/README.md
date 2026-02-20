@@ -16,6 +16,8 @@ bun dev
 frontend/
   components/     # React components
   js/             # Logic & utilities
+  css/            # Stylesheets
+  public/         # Just for logo
   public/         # Static assets
   index.html      # Entry point
   main.jsx        # React root

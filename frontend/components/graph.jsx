@@ -6,7 +6,7 @@ import { TachionChart } from '../js/visualizer'
 export default function Graph() {
     const containerRef = useRef(null)
     const chartRef = useRef(null)
-    const { historicalData, predictionData, timespan, drawMovingAverage } = useAppState()
+    const { historicalData, predictionData, timespan, drawMovingAverage, isLoading, loadingMessage } = useAppState()
 
     // Initialize chart on mount
     useEffect(() => {
@@ -31,6 +31,11 @@ export default function Graph() {
 
     return (
         <div ref={containerRef} className="chart-container">
+            {isLoading && (
+                <div className="chart-loading-overlay">
+                    <span>{loadingMessage || 'Loading...'}</span>
+                </div>
+            )}
             {/* D3 will render the chart here */}
         </div>
     )
