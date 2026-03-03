@@ -65,7 +65,7 @@ See [this writeup](https://github.com/intelligent-username/Classification) for m
 
 ## Usage
 
-The chief way to use Tachion is to go to [tachion.varak.dev](https://tachion.varak.dev) and use the hosted version.
+Once it's up, go to [tachion.varak.dev](https://tachion.varak.dev) and use the hosted version.
 
 Run `pytest` in the main directory to ensure tests pass and everything works.
 
@@ -133,13 +133,13 @@ Tachion/
 │
 ├── core/
 │   ├── README.md
-│   ├── apis/               # API wrappers
-│   │   ├── biapi.py        # For the Binance API
-│   │   ├── frapi.py        # FRED API
-│   │   ├── oaapi.py        # OANDA API
-│   │   ├── tdapi.py        # TwelveData API
-│   │   └── yfapi.py        # yfinance API (Yahoo Finance)
-│   ├── processor/          # Data processing utilities
+│   ├── apis/               # GENERAL API wrappers
+│   │   ├── biapi.py        # Binance
+│   │   ├── frapi.py        # FRED
+│   │   ├── oaapi.py        # OANDA
+│   │   ├── tdapi.py        # TwelveData
+│   │   └── yfapi.py        # yfinance (Yahoo Finance)
+│   ├── processor/          # Data processing utils
 │   └── training/           # Training configs (constants, loaders)
 |
 ├── data/                   # Data collection & engineer

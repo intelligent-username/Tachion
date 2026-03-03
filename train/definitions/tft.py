@@ -77,7 +77,8 @@ def create_tft_estimator(
         "max_epochs": epochs,
         "accelerator": accelerator,
         "devices": 1,
-        "precision": "16-mixed",  # Mixed precision for ~1.5x speedup
+        "precision": "16-mixed",  # Mixed precision for (hopefully) ~1.5x speedup
+        "gradient_clip_val": 1.0,
         "enable_model_summary": True,
         "enable_checkpointing": True,
         "callbacks": callbacks,
@@ -85,7 +86,7 @@ def create_tft_estimator(
         "log_every_n_steps": 10,
         "limit_train_batches": num_batches_per_epoch,
         "default_root_dir": checkpoint_root,
-        "val_check_interval": 65,
+        "val_check_interval": 77,
     }
     
     return TemporalFusionTransformerEstimator(

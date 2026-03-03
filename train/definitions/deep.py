@@ -70,6 +70,7 @@ def create_deepar_estimator(
         "accelerator": accelerator,
         "devices": 1,
         "precision": "16-mixed",
+        "gradient_clip_val": 1.0,
         "enable_model_summary": True,
         "enable_checkpointing": True,
         "callbacks": callbacks,
@@ -77,7 +78,7 @@ def create_deepar_estimator(
         "log_every_n_steps": 10,
         "limit_train_batches": num_batches_per_epoch,
         "default_root_dir": checkpoint_root,
-        "val_check_interval": 65,  # Validate frequently (approx 60x/epoch)
+        "val_check_interval": 77,
     }
     
     return DeepAREstimator(

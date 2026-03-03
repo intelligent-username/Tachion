@@ -86,6 +86,7 @@ def create_trainer(
                 save_top_k=3,
                 monitor="val_loss",
                 mode="min",
+                save_weights_only=True,
             )
         )
     
@@ -100,7 +101,7 @@ def create_trainer(
         log_every_n_steps=50,
         enable_progress_bar=False,
         logger=True,
-        val_check_interval=65,
+        val_check_interval=77,
     )
     
     return trainer

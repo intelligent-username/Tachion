@@ -104,7 +104,7 @@ class InterestRateClassifier(BaseEstimator, ClassifierMixin):
         self,
         n_estimators=100,
         max_depth=4,
-        learning_rate=0.1,
+        learning_rate=0.005,
         gamma_focal=2.0,
         use_smote=True,
         random_state=42

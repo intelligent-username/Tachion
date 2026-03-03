@@ -20,18 +20,18 @@ DEEPAR_NUM_PARALLEL_SAMPLES = 100
 DEEPAR_BATCH_SIZE = 512
 DEEPAR_NUM_BATCHES_PER_EPOCH = 512 
 DEEPAR_EPOCHS = 12
-DEEPAR_LEARNING_RATE = 0.001
+DEEPAR_LEARNING_RATE = 0.01
 DEEPAR_WEIGHT_DECAY = 1e-8
 
 # =============================================================================
-# TFT (Temporal Fusion Transformer) Model Architecture
+# Temporal Fusion Transformer Model Architecture !!
 # =============================================================================
 TFT_PREDICTION_LENGTH = 24
 TFT_CONTEXT_LENGTH = 48
 TFT_NUM_HEADS = 4              # Attention heads
 TFT_HIDDEN_DIM = 128           # LSTM + transformer hidden size
 TFT_VARIABLE_DIM = 32          # Feature embedding size
-TFT_DROPOUT_RATE = 0.1
+TFT_DROPOUT_RATE = 0.05
 
 # =============================================================================
 # TFT Training
@@ -39,7 +39,7 @@ TFT_DROPOUT_RATE = 0.1
 TFT_BATCH_SIZE = 512
 TFT_NUM_BATCHES_PER_EPOCH = 64
 TFT_EPOCHS = 50
-TFT_LEARNING_RATE = 0.1
+TFT_LEARNING_RATE = 0.015
 TFT_WEIGHT_DECAY = 1e-8
 
 # =============================================================================
