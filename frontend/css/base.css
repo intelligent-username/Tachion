@@ -69,7 +69,8 @@ body {
 }
 
 .header .date {
-  color: var(--text-muted);
+  color: #ffffff;
+  opacity: 0.95;
   white-space: nowrap;
   font-size: 0.95rem;
   flex: 0 0 auto;

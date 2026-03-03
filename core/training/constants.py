@@ -1,7 +1,8 @@
 """
-Centralized training constants for DeepAR and other models.
+Centralized training constants for the models.
 
-Import these constants instead of hardcoding values in individual files.
+The project imports these constants instead of hardcoding values in individual files.
+To speed up the training on your hardware, you may want to tweak some of them.
 """
 
 # =============================================================================
@@ -38,7 +39,7 @@ TFT_DROPOUT_RATE = 0.05
 # =============================================================================
 TFT_BATCH_SIZE = 512
 TFT_NUM_BATCHES_PER_EPOCH = 64
-TFT_EPOCHS = 50
+TFT_EPOCHS = 9
 TFT_LEARNING_RATE = 0.015
 TFT_WEIGHT_DECAY = 1e-8
 

@@ -7,7 +7,7 @@ import time
 from lightning.pytorch.callbacks import Callback
 from core.training.constants import TRAIN_LOG_INTERVAL
 
-HOLD_WIDTH = 105
+HOLD_WIDTH = 100
 
 class CleanProgressBar(Callback):
     """Clean progress bar with box-drawing characters."""
@@ -54,7 +54,7 @@ class CleanProgressBar(Callback):
         
         metrics = f"{speed:.1f}it/s | L: {current_loss:.4f} EMA: {self.ema_loss:.4f} V: {float(val_loss):.4f}"
         
-        output = f"\r│ Epoch {self.epoch}/{self.max_epochs} {bar} {pct*100:3.0f}% │ {metrics}  \t│"
+        output = f"\r│ Epoch {self.epoch}/{self.max_epochs} {bar} {pct*100:3.0f}% │ {metrics}  \t\t│"
         sys.stdout.write(output.ljust(HOLD_WIDTH))
         sys.stdout.flush()
     

@@ -115,6 +115,25 @@ def _build_prediction_response(symbol: str, asset_class: str, candles: list[dict
     point_count = max(0, math.floor(math.log(n))) if n > 0 else 0
     last_close = _extract_last_close(candles)
 
+    # =========================================================================
+    # TODO: INFERENCE
+    # =========================================================================
+    # A real model invocation would happen here. For now, this is a dummy path.
+    # Right now, I'm just tweaking the models.
+    # Should be stored on HuggingFace
+    # 
+    # Example pseudo-code for when models are done:
+    # try:
+    #     model = load_predictor(asset_class, "tft2")
+    #     forecast = model.predict(candles, point_count)
+    #     for f in forecast:
+    #         predictions.append(PredictionPoint(
+    #             timestamp=f.timestamp, median=f.median, lower=f.lower, upper=f.upper
+    #         ))
+    # except Exception as e:
+    #     handle_error()
+    # =========================================================================
+
     predictions: list[PredictionPoint] = []
     for i in range(1, point_count + 1):
         ts = end_date + datetime.timedelta(days=i)
