@@ -1,8 +1,5 @@
 # Tachion
 
-![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
-![License](https://img.shields.io/badge/license-Non--Commercial-red)
-
 ![Logo](imgs/Logo.svg)
 
 ## Table of Contents

@@ -9,7 +9,6 @@
   - global reset and document-level defaults
   - main page shells (header, layout, panels)
   - utility classes and scrollbars
-  - note: heading spacing inside chart panel is defined there too
 */
 @import './css/base.css';
 

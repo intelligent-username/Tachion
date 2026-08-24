@@ -2,8 +2,8 @@
   --bg-dark: #0f0f23;
   --bg-panel: rgba(22, 33, 62, 0.8);
   --bg-input: rgba(15, 15, 35, 0.8);
-  --text-main: #eee;
-  --text-muted: #888;
+  --text-main: #eeeeee;
+  --text-muted: #888888;
   --accent: #e74c3c;
   --btn-bg: #304A28;
   --btn-text: #D9DDDC;
@@ -20,7 +20,7 @@
 
 body {
   font-family: var(--font-main);
-  background: linear-gradient(135deg, var(--bg-dark), #16213e);
+  background: var(--bg-dark);
   color: var(--text-main);
   min-height: 100vh;
 }
@@ -40,6 +40,19 @@ body {
   align-items: center;
   gap: 0.75rem;
   min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.5;
 }
 
 .header .brand {
@@ -52,10 +65,7 @@ body {
 
 .header h1 {
   font-size: clamp(1.2rem, 3vw, 1.8rem);
-  background: linear-gradient(90deg, #e74c3c, #f39c12);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text-main);
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
